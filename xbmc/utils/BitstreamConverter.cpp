@@ -62,7 +62,7 @@ enum {
   HEVC_NAL_EOB_NUT    = 37,
   HEVC_NAL_FD_NUT     = 38,
   HEVC_NAL_SEI_PREFIX = 39,
-  HEVC_NAL_SEI_SUFFIX = 40
+  HEVC_NAL_SEI_SUFFIX = 40,
   HEVC_NAL_UNSPEC62   = 62, // Dolby Vision RPU
   HEVC_NAL_UNSPEC63   = 63  // Dolby Vision EL
 };
