@@ -75,6 +75,7 @@ namespace PVR
     EpgContainer,
     EpgItemUpdate,
     EpgUpdatePending,
+    EpgDeleted,
 
     // Item events
     CurrentItem,
@@ -171,7 +172,7 @@ namespace PVR
     /*!
      * @brief Stop PVRManager.
      */
-    void Stop();
+    void Stop(bool bRestart = false);
 
     /*!
      * @brief Stop PVRManager, unload data.

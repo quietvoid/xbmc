@@ -2039,14 +2039,16 @@ msgctxt "#434"
 msgid "From {0:s} at {1:d} {2:s}"
 msgstr ""
 
+#. Headline of a dialog that pops up when a user tries to play a video that is located on an optical disc (Blu-ray, DVD) but the current KODI device doesn't have the according drive
 #: xbmc/Application.cpp
 msgctxt "#435"
 msgid "No optical disc drive detected"
 msgstr ""
 
-#: xbmc/Application.cpp
+#. Message body of a dialog that pops up when a user tries to play a video that is located on an optical disc (Blu-ray, DVD) but the current KODI device doesn't have the according drive
+#: xbmc/storage/MediaManager.cpp
 msgctxt "#436"
-msgid "You need an optical disc drive to play this video"
+msgid "This video is stored on an optical disc (e.g. DVD, Blu-ray) and cannot be played as your device does not have an appropriate drive."
 msgstr ""
 
 msgctxt "#437"
@@ -4346,8 +4348,13 @@ msgctxt "#1302"
 msgid "Volume control steps"
 msgstr ""
 
-#empty strings from id 1303 to 1374
+#empty strings from id 1303 to 1373
 #strings from 1350 to 1449 are reserved for weather translation
+
+#. Weather token
+msgctxt "#1374"
+msgid "Breezy"
+msgstr ""
 
 #. Weather token
 msgctxt "#1375"
@@ -6105,6 +6112,8 @@ msgstr ""
 msgctxt "#13023"
 msgid "Successfully removed storage device"
 msgstr ""
+
+#empty strings from id 13024 to 13025
 
 #: system/settings/settings.xml
 msgctxt "#13026"
@@ -9595,7 +9604,11 @@ msgctxt "#19071"
 msgid "Update interval"
 msgstr ""
 
-#empty string with id 19072
+#. Dialog warning text for invalid timer setting
+#: xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+msgctxt "#19072"
+msgid "In order to add/update a timer the end date and time must be greater than the start date and time."
+msgstr ""
 
 #. pvr settings "delay channel switch" setting label
 #: system/settings/settings.xml
@@ -15840,6 +15853,7 @@ msgctxt "#24171"
 msgid "Broken"
 msgstr ""
 
+#empty strings from id 24172 to 24179
 #24171-24179 reserved for future use of lifecycle state name (to have continuous chain of GUI)
 
 #. The minimum version a dependency must meet. This is set in the <requires> tag of the dependee
@@ -20276,7 +20290,7 @@ msgctxt "#36434"
 msgid "If enabled, switch to the channel with the programme to remind when auto-closing the reminder popup."
 msgstr ""
 
-#empty strings from id 36435 to 36435
+#empty string with id 36435
 
 #. Description for setting #310: "Keyboard layouts"
 #: system/settings/settings.xml
@@ -21229,7 +21243,7 @@ msgctxt "#37023"
 msgid "Do you wish to stop playback on the remote device?"
 msgstr ""
 
-#empty string id 37024
+#empty string with id 37024
 
 #: system/settings/settings.xml
 msgctxt "#37025"
@@ -22158,7 +22172,7 @@ msgctxt "#39028"
 msgid "Addon \"{0:s}\"[CR]Origin \"{1:s}\"[CR]Version \"{2:s}\"[CR]- will uninstall and be replaced. Would you like to proceed?"
 msgstr ""
 
-#empty string id 39029
+#empty string with id 39029
 
 #. Media source, a filter and smart playlist rule option
 #: xbmc/dialogs/GUIDialogMediaFilter.cpp
@@ -22318,10 +22332,14 @@ msgctxt "#39123"
 msgid "Artwork"
 msgstr ""
 
+#empty string with id 39124
+
 #: system/settings/settings.xml
 msgctxt "#39125"
 msgid "Enable tag reading in file view"
 msgstr ""
+
+#empty string with id 39126
 
 #: system/settings/settings.xml
 msgctxt "#39127"
@@ -22389,6 +22407,8 @@ msgctxt "#39138"
 msgid "The amount of artwork automatically selected - [Maximum] all local images and remote art; [Basic] save space on limited devices or when using a simple skin; [Custom] configured by user for detailed control; [None] no art"
 msgstr ""
 
+#empty string with id 39139
+
 #. Value of setting with label #39137 "Artwork level"
 #: system/settings/settings.xml
 msgctxt "#39140"
@@ -22451,7 +22471,7 @@ msgctxt "#39150"
 msgid "Limit the music video artwork fetched locally or applied from scraper remote art results to just those art types in the whitelist"
 msgstr ""
 
-#.Display Hardware scaling filter setting toggle
+#. Display Hardware scaling filter setting toggle
 msgctxt "#39151"
 msgid "Display hardware scaling filter"
 msgstr ""
