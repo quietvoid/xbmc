@@ -971,11 +971,23 @@ void CBitstreamConverter::BitstreamAllocAndCopy( uint8_t **poutbuf, int *poutbuf
   uint8_t nal_header_size = offset ? 3 : 4;
   void *tmp;
   
-  // MTK Dolby Vision decoder (seems) to expect header of size 4
-  if (dovi_workaround &&
-    (nal_type == HEVC_NAL_UNSPEC62 || nal_type == HEVC_NAL_UNSPEC63))
+  // Fixes for MTK decoder
+  if (dovi_workaround)
   {
-    nal_header_size = 4;
+    // MTK Dolby Vision decoder (seems) to expect header of size 4
+    if (nal_type == HEVC_NAL_UNSPEC62 || nal_type == HEVC_NAL_UNSPEC63)
+    {
+      nal_header_size = 4;
+    }
+    else if (nal_type == HEVC_NAL_SEI_PREFIX)
+    {
+      // Returns a black screen when HDR10+ metadata is also present
+      // Skip ITU-T T.35 SMPTE ST 2094-40 SEI prefix NALUS
+      if (in[0] == 78 && in[1] == 1 && in[2] == 4)
+      {
+        return;
+      }
+    }
   }
 
   *poutbuf_size += sps_pps_size + in_size + nal_header_size;
