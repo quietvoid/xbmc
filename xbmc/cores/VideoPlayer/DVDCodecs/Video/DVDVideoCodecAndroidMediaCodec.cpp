@@ -759,7 +759,15 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
   if (m_codecname.find("OMX.Nvidia", 0, 10) == 0)
     m_invalidPTSValue = AV_NOPTS_VALUE;
   else if (m_codecname.find("OMX.MTK", 0, 7) == 0)
+  {
+    if (m_bitstream && m_mime == "video/dolby-vision")
+    {
+      CLog::Log(LOGDEBUG, "Dolby Vision MTK decoder, using NAL header size 4 workaround");
+      m_bitstream->SetDoviWorkaround();
+    }
+  }
     m_invalidPTSValue = -1; //Use DTS
+  }
   else
     m_invalidPTSValue = 0;
 
