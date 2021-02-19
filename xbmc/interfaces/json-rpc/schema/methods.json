@@ -1023,6 +1023,60 @@
       }
     }
   },
+  "AudioLibrary.GetAvailableArtTypes": {
+    "type": "method",
+    "description": "Retrieve a list of potential art types for a media item",
+    "transport": "Response",
+    "permission": "ReadData",
+    "params": [
+      {
+        "name": "item", "required": true,
+        "type": [
+          { "type": "object", "properties": { "albumid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "artistid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false }
+        ]
+      }
+    ],
+    "returns": {
+      "type": "object",
+      "properties": {
+        "availablearttypes": { "type": "array", "required": true,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "AudioLibrary.GetAvailableArt": {
+    "type": "method",
+    "description": "Retrieve all potential art URLs for a media item by art type",
+    "transport": "Response",
+    "permission": "ReadData",
+    "params": [
+      {
+        "name": "item", "required": true,
+        "type": [
+          { "type": "object", "properties": { "albumid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "artistid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false }
+        ]
+      },
+      { "name": "arttype", "type": "string" }
+    ],
+    "returns": {
+      "type": "object",
+      "properties": {
+        "availableart": { "type": "array", "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string", "description": "URL to the original image", "required": true },
+              "arttype": { "type": "string", "required": true },
+              "previewurl": { "type": "string", "description": "URL to a preview thumbnail of the image" }
+            }
+          }
+        }
+      }
+    }
+  },
   "AudioLibrary.SetArtistDetails": {
     "type": "method",
     "description": "Update the given artist with the given details",
@@ -1540,6 +1594,68 @@
       }
     }
   },
+  "VideoLibrary.GetAvailableArtTypes": {
+    "type": "method",
+    "description": "Retrieve a list of potential art types for a media item",
+    "transport": "Response",
+    "permission": "ReadData",
+    "params": [
+      {
+        "name": "item", "required": true,
+        "type": [
+          { "type": "object", "properties": { "episodeid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "tvshowid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "seasonid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "movieid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "setid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "musicvideoid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false }
+        ]
+      }
+    ],
+    "returns": {
+      "type": "object",
+      "properties": {
+        "availablearttypes": { "type": "array", "required": true,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "VideoLibrary.GetAvailableArt": {
+    "type": "method",
+    "description": "Retrieve all potential art URLs for a media item by art type",
+    "transport": "Response",
+    "permission": "ReadData",
+    "params": [
+      {
+        "name": "item", "required": true,
+        "type": [
+          { "type": "object", "properties": { "episodeid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "tvshowid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "seasonid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "movieid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "setid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false },
+          { "type": "object", "properties": { "musicvideoid": { "$ref": "Library.Id", "required": true } }, "additionalProperties": false }
+        ]
+      },
+      { "name": "arttype", "type": "string" }
+    ],
+    "returns": {
+      "type": "object",
+      "properties": {
+        "availableart": { "type": "array", "required": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string", "description": "URL to the original image", "required": true },
+              "arttype": { "type": "string", "required": true },
+              "previewurl": { "type": "string", "description": "URL to a preview thumbnail of the image" }
+            }
+          }
+        }
+      }
+    }
+  },
   "VideoLibrary.SetMovieDetails": {
     "type": "method",
     "description": "Update the given movie with the given details",
@@ -2040,7 +2156,8 @@
     "params": [
       { "name": "channelgroupid", "$ref": "PVR.ChannelGroup.Id", "required": true },
       { "name": "properties", "$ref": "PVR.Fields.Channel" },
-      { "name": "limits", "$ref": "List.Limits" }
+      { "name": "limits", "$ref": "List.Limits" },
+      { "name": "sort", "$ref": "List.Sort" }
     ],
     "returns": { "type": "object",
       "properties": {
@@ -2134,7 +2251,8 @@
     "permission": "ReadData",
     "params": [
       { "name": "properties", "$ref": "PVR.Fields.Timer" },
-      { "name": "limits", "$ref": "List.Limits" }
+      { "name": "limits", "$ref": "List.Limits" },
+      { "name": "sort", "$ref": "List.Sort" }
     ],
     "returns": { "type": "object",
       "properties": {
@@ -2200,7 +2318,8 @@
     "permission": "ReadData",
     "params": [
       { "name": "properties", "$ref": "PVR.Fields.Recording" },
-      { "name": "limits", "$ref": "List.Limits" }
+      { "name": "limits", "$ref": "List.Limits" },
+      { "name": "sort", "$ref": "List.Sort" }
     ],
     "returns": { "type": "object",
       "properties": {

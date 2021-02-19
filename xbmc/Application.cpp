@@ -1692,14 +1692,20 @@ bool CApplication::OnAction(const CAction &action)
     }
     else if (hdrStatus == HDR_STATUS::HDR_ON)
     {
-      CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, g_localizeStrings.Get(34222),
-                                            g_localizeStrings.Get(34223));
+      CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, g_localizeStrings.Get(34220),
+                                            g_localizeStrings.Get(34222));
     }
     return true;
   }
   // Tone Mapping : switch to next tone map method
   if (action.GetID() == ACTION_CYCLE_TONEMAP_METHOD)
   {
+    // Only enables tone mapping switch if display is not HDR capable or HDR is not enabled
+    if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
+            CServiceBroker::GetWinSystem()->SETTING_WINSYSTEM_IS_HDR_DISPLAY) &&
+        CServiceBroker::GetWinSystem()->IsHDRDisplay())
+      return true;
+
     if (m_appPlayer.IsPlayingVideo())
     {
       CVideoSettings vs = m_appPlayer.GetVideoSettings();
@@ -4280,9 +4286,6 @@ void CApplication::Process()
     m_slowTimer.Reset();
     ProcessSlow();
   }
-#if !defined(TARGET_DARWIN)
-  CServiceBroker::GetCPUInfo()->GetUsedPercentage(); // must call it to recalculate pct values
-#endif
 }
 
 // We get called every 500ms

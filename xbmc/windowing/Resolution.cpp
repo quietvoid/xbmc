@@ -19,6 +19,7 @@
 #include "utils/log.h"
 
 #include <cstdlib>
+#include <limits>
 
 namespace
 {
@@ -124,6 +125,9 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
 
   CLog::Log(LOGDEBUG, "[WHITELIST] Searching for an exact resolution with an exact refresh rate");
 
+  unsigned int penalty = std::numeric_limits<unsigned int>::max();
+  bool found = false;
+
   for (const auto& mode : indexList)
   {
     auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
@@ -139,12 +143,18 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
       CLog::Log(LOGDEBUG,
                 "[WHITELIST] Matched an exact resolution with an exact refresh rate {} ({})",
                 info.strMode, i);
-      resolution = i;
-      return;
+      unsigned int pen = abs(info.iScreenHeight - height) + abs(info.iScreenWidth - width);
+      if (pen < penalty)
+      {
+        resolution = i;
+        found = true;
+        penalty = pen;
+      }
     }
   }
 
-  CLog::Log(LOGDEBUG, "[WHITELIST] No match for an exact resolution with an exact refresh rate");
+  if (!found)
+    CLog::Log(LOGDEBUG, "[WHITELIST] No match for an exact resolution with an exact refresh rate");
 
   if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
           SETTING_VIDEOSCREEN_WHITELIST_DOUBLEREFRESHRATE))
@@ -167,14 +177,23 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
         CLog::Log(LOGDEBUG,
                   "[WHITELIST] Matched an exact resolution with double the refresh rate {} ({})",
                   info.strMode, i);
-        resolution = i;
-        return;
+        unsigned int pen = abs(info.iScreenHeight - height) + abs(info.iScreenWidth - width);
+        if (pen < penalty)
+        {
+          resolution = i;
+          found = true;
+          penalty = pen;
+        }
       }
     }
+    if (found)
+      return;
 
     CLog::Log(LOGDEBUG,
               "[WHITELIST] No match for an exact resolution with double the refresh rate");
   }
+  else if (found)
+    return;
 
   if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
           SETTING_VIDEOSCREEN_WHITELIST_PULLDOWN))
@@ -198,10 +217,17 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
             LOGDEBUG,
             "[WHITELIST] Matched an exact resolution with a 3:2 pulldown refresh rate {} ({})",
             info.strMode, i);
-        resolution = i;
-        return;
+        unsigned int pen = abs(info.iScreenHeight - height) + abs(info.iScreenWidth - width);
+        if (pen < penalty)
+        {
+          resolution = i;
+          found = true;
+          penalty = pen;
+        }
       }
     }
+    if (found)
+      return;
 
     CLog::Log(LOGDEBUG, "[WHITELIST] No match for a resolution with a 3:2 pulldown refresh rate");
   }

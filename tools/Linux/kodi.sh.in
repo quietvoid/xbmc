@@ -28,7 +28,6 @@ LIBDIR="@libdir@"
 APP_BINARY=$LIBDIR/${bin_name}/@APP_BINARY@
 CRASHLOG_DIR=${CRASHLOG_DIR:-$HOME}
 KODI_DATA=${KODI_DATA:-"${HOME}/.${bin_name}"} # mapped to special://home/
-WINDOWING=${WINDOWING:-"auto"}
 
 # Workaround for high CPU load with nvidia GFX
 export __GL_YIELD=USLEEP
@@ -138,7 +137,11 @@ print_crash_report()
   echo >> $FILE
   echo "################# LOG FILE ##################" >> $FILE
   echo >> $FILE
-  if [ -f $KODI_DATA/temp/@APP_NAME_LC@.log ]
+  if [ -f $KODI_TEMP/@APP_NAME_LC@.log ]
+  then
+    cat $KODI_TEMP/@APP_NAME_LC@.log >> $FILE
+    echo >> $FILE
+  elif [ -f $KODI_DATA/temp/@APP_NAME_LC@.log ]
   then
     cat $KODI_DATA/temp/@APP_NAME_LC@.log >> $FILE
     echo >> $FILE
