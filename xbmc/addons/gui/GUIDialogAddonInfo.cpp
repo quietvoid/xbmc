@@ -597,7 +597,7 @@ void CGUIDialogAddonInfo::OnSettings()
 bool CGUIDialogAddonInfo::ShowDependencyList(Reactivate reactivate, EntryPoint entryPoint)
 {
   if (entryPoint != EntryPoint::INSTALL ||
-      (entryPoint == EntryPoint::INSTALL && !m_allDepsInstalled))
+      (entryPoint == EntryPoint::INSTALL && m_showDepDialogOnInstall))
   {
     auto pDialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(
         WINDOW_DIALOG_SELECT);
@@ -615,24 +615,34 @@ bool CGUIDialogAddonInfo::ShowDependencyList(Reactivate reactivate, EntryPoint e
       if (infoAddon)
       {
         if (entryPoint != EntryPoint::UPDATE ||
-            (entryPoint == EntryPoint::UPDATE && !it.m_isInstalledUpToDate()))
+            (entryPoint == EntryPoint::UPDATE && !it.IsInstalledUpToDate()))
         {
           const CFileItemPtr item = std::make_shared<CFileItem>(infoAddon->Name());
           int messageId = 24180; // minversion only
 
           // dep not installed locally, but it is available from a repo!
+          // make sure only non-optional add-ons that meet versionMin are
+          // announced for installation
+
           if (!it.m_installed)
           {
-            if (entryPoint != EntryPoint::SHOW_DEPENDENCIES)
+            if (entryPoint != EntryPoint::SHOW_DEPENDENCIES && !it.m_depInfo.optional)
             {
-              messageId = 24181; // => install
+              if (it.m_depInfo.versionMin <= it.m_available->Version())
+              {
+                messageId = 24181; // => install
+              }
+              else
+              {
+                messageId = 24185; // => not available, only lower versions available in the repos
+              }
             }
           }
           else // dep is installed locally
           {
             messageId = 24182; // => installed
 
-            if (!it.m_isInstalledUpToDate())
+            if (!it.IsInstalledUpToDate())
             {
               messageId = 24183; // => update to
             }
@@ -733,7 +743,7 @@ void CGUIDialogAddonInfo::BuildDependencyList()
   if (!m_item)
     return;
 
-  m_allDepsInstalled = true;
+  m_showDepDialogOnInstall = false;
   m_depsInstalledWithAvailable.clear();
   m_deps = CServiceBroker::GetAddonMgr().GetDepsRecursive(m_item->GetAddonInfo()->ID(),
                                                           OnlyEnabledRootAddon::NO);
@@ -751,7 +761,6 @@ void CGUIDialogAddonInfo::BuildDependencyList()
                                                 OnlyEnabled::YES))
     {
       addonInstalled = nullptr;
-      m_allDepsInstalled = false;
     }
 
     // Find add-on in repositories
@@ -760,7 +769,19 @@ void CGUIDialogAddonInfo::BuildDependencyList()
       addonAvailable = nullptr;
     }
 
-    // Depending on advancedsettings.xml <showalldependencies>:
+    if (!addonInstalled)
+    {
+      // after pushing the install button the dependency install dialog will
+      // pop up only if non-module dependencies are going to be installed or
+      // dependencies are unavailable. the latter is for informational purposes
+
+      if (showAllDependencies || !addonAvailable ||
+          addonAvailable->MainType() != ADDON_SCRIPT_MODULE)
+      {
+        m_showDepDialogOnInstall = true;
+      }
+    }
+
     // AddonType ADDON_SCRIPT_MODULE needs to be filtered as these low-level add-ons
     // should be hidden to the user in the dependency select dialog
 
@@ -769,8 +790,7 @@ void CGUIDialogAddonInfo::BuildDependencyList()
         (addonAvailable && addonAvailable->MainType() != ADDON_SCRIPT_MODULE) ||
         (!addonAvailable && !addonInstalled))
     {
-      m_depsInstalledWithAvailable.emplace_back(
-          CInstalledWithAvailable{dep, addonInstalled, addonAvailable});
+      m_depsInstalledWithAvailable.emplace_back(dep, addonInstalled, addonAvailable);
     }
 
     // sort optional add-ons to top of the list
@@ -779,4 +799,17 @@ void CGUIDialogAddonInfo::BuildDependencyList()
         m_depsInstalledWithAvailable.begin(), m_depsInstalledWithAvailable.end(),
         [](const auto& a, const auto& b) { return a.m_depInfo.optional > b.m_depInfo.optional; });
   }
+}
+
+bool CInstalledWithAvailable::IsInstalledUpToDate() const
+{
+  if (m_installed)
+  {
+    if (!m_available || m_available->Version() == m_installed->Version())
+    {
+      return true;
+    }
+  }
+
+  return false;
 }

@@ -49,9 +49,11 @@ static void libass_log(int level, const char *fmt, va_list args, void *data)
 
 CDVDSubtitlesLibass::CDVDSubtitlesLibass()
 {
-  //Setting the font directory to the temp dir(where mkv fonts are extracted to)
-  std::string strPath = "special://temp/fonts/";
+  // Setting the font directory to the user font dir. This is the directory
+  // where user defined fonts are located (and where mkv fonts are extracted to)
+  const std::string strPath = "special://home/media/Fonts/";
 
+  CLog::Log(LOGINFO, "CDVDSubtitlesLibass: Using libass version {0:x}", ass_library_version());
   CLog::Log(LOGINFO, "CDVDSubtitlesLibass: Creating ASS library structure");
   m_library = ass_library_init();
   if(!m_library)
@@ -165,7 +167,7 @@ ASS_Image* CDVDSubtitlesLibass::RenderImage(int frameWidth, int frameHeight, int
   ass_set_margins(m_renderer, topmargin, topmargin, leftmargin, leftmargin);
   ass_set_use_margins(m_renderer, useMargin);
   ass_set_line_position(m_renderer, position);
-  ass_set_aspect_ratio(m_renderer, dar, sar);
+  ass_set_pixel_aspect(m_renderer, sar / dar);
   return ass_render_frame(m_renderer, m_track, DVD_TIME_TO_MSEC(pts), changes);
 }
 

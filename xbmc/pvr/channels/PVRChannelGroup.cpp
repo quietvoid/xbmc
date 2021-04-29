@@ -598,20 +598,22 @@ std::vector<std::shared_ptr<CPVRChannel>> CPVRChannelGroup::RemoveDeletedChannel
   CSingleLock lock(m_critSection);
 
   /* check for deleted channels */
-  for (std::vector<std::shared_ptr<PVRChannelGroupMember>>::iterator it = m_sortedMembers.begin(); it != m_sortedMembers.end();)
+  for (auto it = m_sortedMembers.begin(); it != m_sortedMembers.end();)
   {
     const std::shared_ptr<CPVRChannel> channel = (*it)->channel;
-    if (channels.m_members.find(channel->StorageId()) == channels.m_members.end() &&
-        HasValidDataFromClient(channel->ClientID()))
+    if (channels.m_members.find(channel->StorageId()) == channels.m_members.end())
     {
-      CLog::Log(LOGINFO, "Removed stale {} channel '{}' from group '{}'",
-                IsRadio() ? "radio" : "TV", channel->ChannelName(), GroupName());
-
-      removedChannels.emplace_back(channel);
-
       m_members.erase(channel->StorageId());
       it = m_sortedMembers.erase(it);
-      m_bChanged = true;
+
+      if (HasValidDataFromClient(channel->ClientID()))
+      {
+        CLog::Log(LOGINFO, "Removed stale {} channel '{}' from group '{}'",
+                  IsRadio() ? "radio" : "TV", channel->ChannelName(), GroupName());
+
+        removedChannels.emplace_back(channel);
+        m_bChanged = true;
+      }
     }
     else
     {
@@ -1159,7 +1161,7 @@ bool CPVRChannelGroup::CreateChannelEpgs(bool bForce /* = false */)
   return true;
 }
 
-void CPVRChannelGroup::SetHidden(bool bHidden)
+bool CPVRChannelGroup::SetHidden(bool bHidden)
 {
   CSingleLock lock(m_critSection);
 
@@ -1168,6 +1170,8 @@ void CPVRChannelGroup::SetHidden(bool bHidden)
     m_bHidden = bHidden;
     m_bChanged = true;
   }
+
+  return m_bChanged;
 }
 
 bool CPVRChannelGroup::IsHidden() const

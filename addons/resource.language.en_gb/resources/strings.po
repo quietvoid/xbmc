@@ -716,7 +716,7 @@ msgctxt "#167"
 msgid "Cancel file operations"
 msgstr ""
 
-#: xbmc/settings/windows/GUIWindowSettingsCategory.cpp
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#168"
 msgid "{0:s}- {1:s}"
 msgstr ""
@@ -4233,6 +4233,7 @@ msgctxt "#1222"
 msgid "Music & video & pictures & files"
 msgstr ""
 
+#: addons/skin.estuary/xml/Variables.xml
 msgctxt "#1223"
 msgid "Disabled"
 msgstr ""
@@ -4782,7 +4783,19 @@ msgctxt "#2104"
 msgid "Check the log for more information."
 msgstr ""
 
-#empty strings from id 2105 to 9999
+#empty strings from id 2105 to 2202
+
+#: system/settings/settings.xml
+msgctxt "#2203"
+msgid "Use DTS Core"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#2204"
+msgid "Select this option if you want to passthrough DTS-HD formats as DTS, otherwise, DTS-HD formats will be played via PCM"
+msgstr ""
+
+#empty strings from id 2205 to 9999
 
 #: xbmc/guilib/WindowIDs.h
 msgctxt "#10000"
@@ -4949,12 +4962,14 @@ msgctxt "#10040"
 msgid "Add-on browser"
 msgstr ""
 
-#: xbmc/settings/windows/GUIWindowSettingsCategory.cpp
+#: xbmc/peripherals/dialogs/GUIDialogPeripheralSettings.cpp
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#10041"
 msgid "Reset above settings to default"
 msgstr ""
 
-#: xbmc/settings/windows/GUIWindowSettingsCategory.cpp
+#: xbmc/peripherals/dialogs/GUIDialogPeripheralSettings.cpp
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#10042"
 msgid "Are you sure you want to reset the settings in this category?"
 msgstr ""
@@ -4967,16 +4982,17 @@ msgctxt "#10044"
 msgid "No help available"
 msgstr ""
 
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#10045"
 msgid "Resets all the visible settings to their default values."
 msgstr ""
 
-#: xbmc/settings/windows/GUIWindowSettingsCategory.cpp
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#10046"
 msgid "No categories available"
 msgstr ""
 
-#: xbmc/settings/windows/GUIWindowSettingsCategory.cpp
+#: xbmc/settings/dialogs/GUIDialogSettingsBase.cpp
 msgctxt "#10047"
 msgid "Try changing the setting level to see additional categories and settings."
 msgstr ""
@@ -15890,7 +15906,14 @@ msgctxt "#24184"
 msgid " (optional)"
 msgstr ""
 
-#empty strings from id 24185 to 24990
+#. The minimum version, only lower versions are available for install
+#. {3:s} reserved for an empty string or the " (optional)" optional string. see #24184
+#: xbmc/addons/gui/GUIDialogAddonInfo.cpp
+msgctxt "#24185"
+msgid "Minimum: {0:s} / Not available{3:s}"
+msgstr ""
+
+#empty strings from id 24186 to 24990
 
 #. Used as error message in add-on browser when add-on repository data could not be downloaded
 #: xbmc/filesystem/AddonsDirectory.cpp

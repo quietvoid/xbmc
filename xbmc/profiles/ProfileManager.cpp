@@ -6,11 +6,8 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
 #include "ProfileManager.h"
+
 #include "DatabaseManager.h"
 #include "FileItem.h"
 #include "GUIInfoManager.h"
@@ -31,9 +28,14 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "input/InputManager.h"
+#include "music/MusicLibraryQueue.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/SettingsManager.h"
+
+#include <algorithm>
+#include <string>
+#include <vector>
 #if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
 #include "storage/DetectDVDType.h"
 #endif
@@ -267,7 +269,7 @@ void CProfileManager::PrepareLoadProfile(unsigned int profileIndex)
   pvrManager.Stop();
 
   if (profileIndex != 0 || !IsMasterProfile())
-    networkManager.NetworkMessage(CNetwork::SERVICES_DOWN, 1);
+    networkManager.NetworkMessage(CNetworkBase::SERVICES_DOWN, 1);
 }
 
 bool CProfileManager::LoadProfile(unsigned int index)
@@ -438,8 +440,8 @@ void CProfileManager::LogOff()
 
   g_application.StopPlaying();
 
-  if (g_application.IsMusicScanning())
-    g_application.StopMusicScan();
+  if (CMusicLibraryQueue::GetInstance().IsScanningLibrary())
+    CMusicLibraryQueue::GetInstance().StopLibraryScanning();
 
   if (CVideoLibraryQueue::GetInstance().IsRunning())
     CVideoLibraryQueue::GetInstance().CancelAllJobs();
@@ -447,7 +449,7 @@ void CProfileManager::LogOff()
   // Stop PVR services
   CServiceBroker::GetPVRManager().Stop();
 
-  networkManager.NetworkMessage(CNetwork::SERVICES_DOWN, 1);
+  networkManager.NetworkMessage(CNetworkBase::SERVICES_DOWN, 1);
 
   LoadMasterProfileForLogin();
 

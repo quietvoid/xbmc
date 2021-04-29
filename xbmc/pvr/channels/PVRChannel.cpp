@@ -104,7 +104,6 @@ void CPVRChannel::Serialize(CVariant& value) const
   if (epg)
     epg->Serialize(value["broadcastnext"]);
 
-  value["isrecording"] = false; // compat
   value["hasarchive"] = m_bHasArchive;
   value["clientid"] = m_iClientId;
 }
@@ -202,6 +201,8 @@ bool CPVRChannel::UpdateFromClient(const std::shared_ptr<CPVRChannel>& channel)
     m_bHasArchive = channel->HasArchive();
 
     UpdateEncryptionName();
+
+    m_bChanged = true;
   }
 
   // only update the channel name and icon if the user hasn't changed them manually

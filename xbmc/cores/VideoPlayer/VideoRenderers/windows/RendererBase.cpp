@@ -35,6 +35,7 @@ void CRenderBuffer::AppendPicture(const VideoPicture& picture)
   full_range = picture.color_range == 1;
   bits = picture.colorBits;
   stereoMode = picture.stereoMode;
+  pixelFormat = picture.pixelFormat;
 
   hasDisplayMetadata = picture.hasDisplayMetadata;
   displayMetadata = picture.displayMetadata;
@@ -489,31 +490,70 @@ AVPixelFormat CRendererBase::GetAVFormat(DXGI_FORMAT dxgi_format)
 
 DXGI_HDR_METADATA_HDR10 CRendererBase::GetDXGIHDR10MetaData(CRenderBuffer* rb)
 {
-  DXGI_HDR_METADATA_HDR10 hdr10 = {};
+  DXGI_HDR_METADATA_HDR10 hdr = {};
+
+  constexpr int FACTOR_1 = 50000;
+  constexpr int FACTOR_2 = 10000;
 
   if (rb->hasDisplayMetadata && rb->displayMetadata.has_primaries)
   {
-    hdr10.RedPrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[0][0].num);
-    hdr10.RedPrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[0][1].num);
-    hdr10.GreenPrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[1][0].num);
-    hdr10.GreenPrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[1][1].num);
-    hdr10.BluePrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[2][0].num);
-    hdr10.BluePrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[2][1].num);
-    hdr10.WhitePoint[0] = static_cast<uint16_t>(rb->displayMetadata.white_point[0].num);
-    hdr10.WhitePoint[1] = static_cast<uint16_t>(rb->displayMetadata.white_point[1].num);
-  }
-  if (rb->hasDisplayMetadata && rb->displayMetadata.has_luminance)
-  {
-    hdr10.MaxMasteringLuminance = static_cast<uint32_t>(rb->displayMetadata.max_luminance.num);
-    hdr10.MinMasteringLuminance = static_cast<uint32_t>(rb->displayMetadata.min_luminance.num);
-  }
-  if (rb->hasLightMetadata)
-  {
-    hdr10.MaxContentLightLevel = static_cast<uint16_t>(rb->lightMetadata.MaxCLL);
-    hdr10.MaxFrameAverageLightLevel = static_cast<uint16_t>(rb->lightMetadata.MaxFALL);
+    if (rb->displayMetadata.display_primaries[0][0].den == FACTOR_1 &&
+        rb->displayMetadata.white_point[0].den == FACTOR_1)
+    {
+      hdr.RedPrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[0][0].num);
+      hdr.RedPrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[0][1].num);
+      hdr.GreenPrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[1][0].num);
+      hdr.GreenPrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[1][1].num);
+      hdr.BluePrimary[0] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[2][0].num);
+      hdr.BluePrimary[1] = static_cast<uint16_t>(rb->displayMetadata.display_primaries[2][1].num);
+      hdr.WhitePoint[0] = static_cast<uint16_t>(rb->displayMetadata.white_point[0].num);
+      hdr.WhitePoint[1] = static_cast<uint16_t>(rb->displayMetadata.white_point[1].num);
+    }
+    else
+    {
+      hdr.RedPrimary[0] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[0][0]));
+      hdr.RedPrimary[1] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[0][1]));
+      hdr.GreenPrimary[0] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[1][0]));
+      hdr.GreenPrimary[1] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[1][1]));
+      hdr.BluePrimary[0] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[2][0]));
+      hdr.BluePrimary[1] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.display_primaries[2][1]));
+      hdr.WhitePoint[0] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.white_point[0]));
+      hdr.WhitePoint[1] =
+          static_cast<uint16_t>(FACTOR_1 * av_q2d(rb->displayMetadata.white_point[1]));
+    }
   }
 
-  return hdr10;
+  if (rb->hasDisplayMetadata && rb->displayMetadata.has_luminance)
+  {
+    if (rb->displayMetadata.max_luminance.den == FACTOR_2 &&
+        rb->displayMetadata.min_luminance.den == FACTOR_2)
+    {
+      hdr.MaxMasteringLuminance = static_cast<uint32_t>(rb->displayMetadata.max_luminance.num);
+      hdr.MinMasteringLuminance = static_cast<uint32_t>(rb->displayMetadata.min_luminance.num);
+    }
+    else
+    {
+      hdr.MaxMasteringLuminance =
+          static_cast<uint32_t>(FACTOR_2 * av_q2d(rb->displayMetadata.max_luminance));
+      hdr.MinMasteringLuminance =
+          static_cast<uint32_t>(FACTOR_2 * av_q2d(rb->displayMetadata.min_luminance));
+    }
+  }
+
+  if (rb->hasLightMetadata)
+  {
+    hdr.MaxContentLightLevel = static_cast<uint16_t>(rb->lightMetadata.MaxCLL);
+    hdr.MaxFrameAverageLightLevel = static_cast<uint16_t>(rb->lightMetadata.MaxFALL);
+  }
+
+  return hdr;
 }
 
 void CRendererBase::ProcessHDR(CRenderBuffer* rb)
@@ -597,4 +637,83 @@ void CRendererBase::ProcessHDR(CRenderBuffer* rb)
         DX::Windowing()->ToggleHDR(); // Toggle display HDR OFF
     }
   }
+}
+
+DEBUG_INFO_VIDEO CRendererBase::GetDebugInfo(int idx)
+{
+  CRenderBuffer* rb = m_renderBuffers[idx];
+
+  const char* px = av_get_pix_fmt_name(rb->pixelFormat);
+  const char* pr = av_color_primaries_name(rb->primaries);
+  const char* tr = av_color_transfer_name(rb->color_transfer);
+
+  const std::string pixel = px ? px : "unknown";
+  const std::string prim = pr ? pr : "unknown";
+  const std::string trans = tr ? tr : "unknown";
+
+  const int max = static_cast<int>(std::exp2(rb->bits));
+  const int range_min = rb->full_range ? 0 : (max * 16) / 256;
+  const int range_max = rb->full_range ? max - 1 : (max * 235) / 256;
+
+  DEBUG_INFO_VIDEO info;
+
+  info.videoSource = StringUtils::Format(
+      "Source: {}x{}{}, fr: {:.3f}, pixel: {} {}-bit, range: {}-{}, matx: {}, trc: {}",
+      m_sourceWidth, m_sourceHeight, (rb->pictureFlags & DVP_FLAG_INTERLACED) ? "i" : "p", m_fps,
+      pixel, rb->bits, range_min, range_max, prim, trans);
+
+  info.metaPrim = "Primaries (meta): ";
+  info.metaLight = "HDR light (meta): ";
+
+  if (rb->hasDisplayMetadata && rb->displayMetadata.has_primaries &&
+      rb->displayMetadata.display_primaries[0][0].num)
+  {
+    double prim[3][2];
+    double wp[2];
+
+    for (int i = 0; i < 3; i++)
+    {
+      for (int j = 0; j < 2; j++)
+        prim[i][j] = static_cast<double>(rb->displayMetadata.display_primaries[i][j].num) /
+                     static_cast<double>(rb->displayMetadata.display_primaries[i][j].den);
+    }
+
+    for (int j = 0; j < 2; j++)
+      wp[j] = static_cast<double>(rb->displayMetadata.white_point[j].num) /
+              static_cast<double>(rb->displayMetadata.white_point[j].den);
+
+    info.metaPrim += StringUtils::Format(
+        "R({:.3f} {:.3f}), G({:.3f} {:.3f}), B({:.3f} {:.3f}), WP({:.3f} {:.3f})", prim[0][0],
+        prim[0][1], prim[1][0], prim[1][1], prim[2][0], prim[2][1], wp[0], wp[1]);
+  }
+  else
+  {
+    info.metaPrim += "none";
+  }
+
+  if (rb->hasDisplayMetadata && rb->displayMetadata.has_luminance &&
+      rb->displayMetadata.max_luminance.num)
+  {
+    double maxML = static_cast<double>(rb->displayMetadata.max_luminance.num) /
+                   static_cast<double>(rb->displayMetadata.max_luminance.den);
+    double minML = static_cast<double>(rb->displayMetadata.min_luminance.num) /
+                   static_cast<double>(rb->displayMetadata.min_luminance.den);
+
+    info.metaLight += StringUtils::Format("max ML: {:.0f}, min ML: {:.4f}", maxML, minML);
+
+    if (rb->hasLightMetadata && rb->lightMetadata.MaxCLL)
+    {
+      info.metaLight += StringUtils::Format(", max CLL: {}, max FALL: {}", rb->lightMetadata.MaxCLL,
+                                            rb->lightMetadata.MaxFALL);
+    }
+  }
+  else
+  {
+    info.metaLight += "none";
+  }
+
+  if (m_outputShader)
+    info.shader = m_outputShader->GetDebugInfo();
+
+  return info;
 }

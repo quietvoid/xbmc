@@ -61,7 +61,7 @@ namespace PVR
      * @brief Get the minimal database version that is required to operate correctly.
      * @return The minimal database version.
      */
-    int GetSchemaVersion() const override { return 37; }
+    int GetSchemaVersion() const override { return 38; }
 
     /*!
      * @brief Get the default sqlite database filename.
@@ -148,6 +148,13 @@ namespace PVR
      * @return True if the group was deleted successfully, false otherwise.
      */
     bool Delete(const CPVRChannelGroup& group);
+
+    /*!
+     * @brief Remove all channel members of the given group from the database
+     * @param iGroupID The id of the group.
+     * @return True if all channel members were removed, false otherwise.
+     */
+    bool QueueDeleteChannelGroupMembersQuery(int iGroupID);
 
     /*!
      * @brief Get the channel groups.

@@ -221,12 +221,19 @@ bool CWinSystemX11GLContext::RefreshGLContext(bool force)
   bool success = false;
   if (m_pGLContext)
   {
+    if (force)
+    {
+      g_application.UnloadSkin();
+      CRenderSystemGL::DestroyRenderSystem();
+    }
     success = m_pGLContext->Refresh(force, m_screen, m_glWindow, m_newGlContext);
     if (!success)
     {
       success = m_pGLContext->CreatePB();
       m_newGlContext = true;
     }
+    if (force)
+      CRenderSystemGL::InitRenderSystem();
     return success;
   }
 
@@ -325,7 +332,7 @@ uint64_t CWinSystemX11GLContext::GetVblankTiming(uint64_t &msc, uint64_t &interv
   if (m_pGLContext)
   {
     float micros = m_pGLContext->GetVblankTiming(msc, interval);
-    return micros / 1000;
+    return micros;
   }
   msc = 0;
   interval = 0;

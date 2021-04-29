@@ -74,6 +74,7 @@
 #include "filesystem/SpecialProtocol.h"
 #include "filesystem/VideoDatabaseFile.h"
 #include "guilib/GUIComponent.h"
+#include "guilib/GUIWindowManager.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
 #include "input/Key.h"
 #include "input/mouse/MouseStat.h"
@@ -283,7 +284,13 @@ void CXBMCApp::onPause()
   }
 
   if (m_hasReqVisible)
-    g_application.SwitchToFullScreen(true);
+  {
+    CGUIComponent* gui = CServiceBroker::GetGUI();
+    if (gui)
+    {
+      gui->GetWindowManager().SwitchToFullScreen(true);
+    }
+  }
 
   EnableWakeLock(false);
   m_hasReqVisible = false;
@@ -1250,6 +1257,18 @@ int CXBMCApp::WaitForActivityResult(const CJNIIntent &intent, int requestCode, C
     result = event->GetResultData();
     ret = event->GetResultCode();
   }
+
+  // delete from m_activityResultEvents map before deleting the event
+  CSingleLock lock(m_activityResultMutex);
+  for (auto it = m_activityResultEvents.begin(); it != m_activityResultEvents.end(); ++it)
+  {
+    if ((*it)->GetRequestCode() == requestCode)
+    {
+      m_activityResultEvents.erase(it);
+      break;
+    }
+  }
+
   delete event;
   return ret;
 }
@@ -1347,6 +1366,12 @@ void CXBMCApp::SetupEnv()
   std::string className = CCompileInfo::GetPackage();
 
   std::string cacheDir = getCacheDir().getAbsolutePath();
+  std::string xbmcTemp = CJNISystem::getProperty("xbmc.temp", "");
+  if (!xbmcTemp.empty())
+  {
+    setenv("KODI_TEMP", xbmcTemp.c_str(), 0);
+  }
+
   std::string xbmcHome = CJNISystem::getProperty("xbmc.home", "");
   if (xbmcHome.empty())
   {

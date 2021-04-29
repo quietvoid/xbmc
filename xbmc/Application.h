@@ -28,9 +28,6 @@
 #include "settings/lib/ISettingsHandler.h"
 #include "settings/lib/ISettingCallback.h"
 #include "settings/ISubSettings.h"
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
-#include "storage/DetectDVDType.h"
-#endif
 #ifdef TARGET_WINDOWS
 #include "powermanagement/WinIdleTimer.h"
 #endif
@@ -141,7 +138,6 @@ public:
   bool Initialize() override;
   void FrameMove(bool processEvents, bool processGUI = true) override;
   void Render() override;
-  virtual void Preflight();
   bool Create(const CAppParamParser &params);
   bool Cleanup() override;
 
@@ -150,8 +146,6 @@ public:
 
   bool CreateGUI();
   bool InitWindow(RESOLUTION res = RES_INVALID);
-  void StartServices();
-  void StopServices();
 
   bool StartServer(enum ESERVERS eServer, bool bStart, bool bWait = false);
 
@@ -251,43 +245,6 @@ public:
   void StopShutdownTimer();
   void ResetShutdownTimers();
 
-  void StopVideoScan();
-  void StopMusicScan();
-  bool IsMusicScanning() const;
-  bool IsVideoScanning() const;
-
-  /*!
-   \brief Starts a video library cleanup.
-   \param userInitiated Whether the action was initiated by the user (either via GUI or any other method) or not.  It is meant to hide or show dialogs.
-   \param content Content type to clean, blank for everything
-   \param strDirectory The path to clean or "" (empty string) for a global clean.
-   */
-  void StartVideoCleanup(bool userInitiated = true, const std::string& content = "", const std::string& strDirectory = "");
-
-  /*!
-   \brief Starts a video library update.
-   \param path The path to scan or "" (empty string) for a global scan.
-   \param userInitiated Whether the action was initiated by the user (either via GUI or any other method) or not.  It is meant to hide or show dialogs.
-   \param scanAll Whether to scan everything not already scanned (regardless of whether the user normally doesn't want a folder scanned).
-   */
-  void StartVideoScan(const std::string &path, bool userInitiated = true, bool scanAll = false);
-
-  /*!
-  \brief Starts a music library cleanup.
-  \param userInitiated Whether the action was initiated by the user (either via GUI or any other method) or not.  It is meant to hide or show dialogs.
-  */
-  void StartMusicCleanup(bool userInitiated = true);
-
-  /*!
-   \brief Starts a music library update.
-   \param path The path to scan or "" (empty string) for a global scan.
-   \param userInitiated Whether the action was initiated by the user (either via GUI or any other method) or not.  It is meant to hide or show dialogs.
-   \param flags Flags for controlling the scanning process.  See xbmc/music/infoscanner/MusicInfoScanner.h for possible values.
-   */
-  void StartMusicScan(const std::string &path, bool userInitiated = true, int flags = 0);
-  void StartMusicAlbumScan(const std::string& strDirectory, bool refresh = false);
-  void StartMusicArtistScan(const std::string& strDirectory, bool refresh = false);
-
   void UpdateLibraries();
 
   void UpdateCurrentPlayArt();
@@ -296,10 +253,6 @@ public:
 
 #ifdef HAS_DVD_DRIVE
   std::unique_ptr<MEDIA_DETECT::CAutorun> m_Autorun;
-#endif
-
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
-  MEDIA_DETECT::CDetectDVDMedia m_DetectDVDType;
 #endif
 
   inline bool IsInScreenSaver() { return m_screensaverActive; };
@@ -316,9 +269,10 @@ public:
   bool IsStandAlone() { return m_bStandalone; }
   bool IsEnableTestMode() { return m_bTestMode; }
 
+  const std::string& GetLogTarget() const { return m_logTarget; }
+
   bool IsAppFocused() const { return m_AppFocused; }
 
-  void Minimize();
   bool ToggleDPMS(bool manual);
 
   bool SwitchToFullScreen(bool force = false);
@@ -447,6 +401,7 @@ protected:
   unsigned int m_lastRenderTime = 0;
   bool m_skipGuiRender = false;
 
+  std::string m_logTarget;
   bool m_bStandalone = false;
   bool m_bTestMode = false;
   bool m_bSystemScreenSaverEnable = false;
@@ -480,6 +435,8 @@ protected:
       m_incompatibleAddons; /*!< Result of addon migration (incompatible addon infos) */
 
 private:
+  void PrintStartupLog();
+
   mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
 
   CCriticalSection m_frameMoveGuard;              /*!< critical section for synchronizing GUI actions from inside and outside (python) */

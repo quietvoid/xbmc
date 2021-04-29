@@ -216,6 +216,68 @@ namespace XBMCAddon
 #ifdef DOXYGEN_SHOULD_USE_THIS
       ///
       /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ getDateTime() }
+      ///-----------------------------------------------------------------------
+      /// Returns the list item's datetime in W3C format (YYYY-MM-DDThh:mm:ssTZD).
+      ///
+      /// @return                   string or unicode - datetime string (W3C).
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v20 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # getDateTime()
+      /// strDateTime = listitem.getDateTime()
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      getDateTime();
+#else
+      String getDateTime();
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ setDateTime(dateTime) }
+      ///-----------------------------------------------------------------------
+      /// Sets the list item's datetime in W3C format.
+      /// The following formats are supported:
+      /// - YYYY
+      /// - YYYY-MM-DD
+      /// - YYYY-MM-DDThh:mm[TZD]
+      /// - YYYY-MM-DDThh:mm:ss[TZD]
+      /// where the timezone (TZD) is always optional and can be in one of the
+      /// following formats:
+      /// - Z (for UTC)
+      /// - +hh:mm
+      /// - -hh:mm
+      ///
+      /// @param label              string or unicode - datetime string (W3C).
+      ///
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v20 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// # setDate(dateTime)
+      /// listitem.setDateTime('2021-03-09T12:30:00Z')
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      setDateTime(...);
+#else
+      void setDateTime(const String& dateTime);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
       /// @brief \python_func{ setArt(values) }
       /// Sets the listitem's art
       ///
@@ -406,6 +468,28 @@ namespace XBMCAddon
       getArt(key);
 #else
       String getArt(const char* key);
+#endif
+
+#ifdef DOXYGEN_SHOULD_USE_THIS
+      ///
+      /// \ingroup python_xbmcgui_listitem
+      /// @brief \python_func{ isFolder() }
+      ///-----------------------------------------------------------------------
+      /// Returns whether the item is a folder or not.
+      ///
+      ///-----------------------------------------------------------------------
+      /// @python_v20 New function added.
+      ///
+      /// **Example:**
+      /// ~~~~~~~~~~~~~{.py}
+      /// ...
+      /// isFolder = listitem.isFolder()
+      /// ...
+      /// ~~~~~~~~~~~~~
+      ///
+      isFolder();
+#else
+      bool isFolder() const;
 #endif
 
 #ifdef DOXYGEN_SHOULD_USE_THIS
@@ -911,8 +995,10 @@ namespace XBMCAddon
       /// | StartPercent  | float (15.0) - Set the percentage at which to start playback of the item
       /// | StationName   | string ("My Station Name") - Used to enforce/override MusicPlayer.StationName infolabel from addons (e.g. in radio addons)
       /// | TotalTime     | float (7848.0) - Set the total time of the item in seconds
+      /// | OverrideInfotag | string - "true", "false" - When true will override all info from previous listitem
       ///
       ///-----------------------------------------------------------------------
+      /// @python_v20 OverrideInfotag property added
       ///
       /// **Example:**
       /// ~~~~~~~~~~~~~{.py}
@@ -1128,5 +1214,3 @@ private:
 #endif
   }
 }
-
-
