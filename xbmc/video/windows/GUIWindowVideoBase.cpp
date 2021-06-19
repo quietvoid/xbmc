@@ -305,10 +305,10 @@ bool CGUIWindowVideoBase::ShowIMDB(CFileItemPtr item, const ScraperPtr &info2, b
 {
   /*
   CLog::Log(LOGDEBUG,"CGUIWindowVideoBase::ShowIMDB");
-  CLog::Log(LOGDEBUG,"  strMovie  = [%s]", strMovie.c_str());
-  CLog::Log(LOGDEBUG,"  strFile   = [%s]", strFile.c_str());
-  CLog::Log(LOGDEBUG,"  strFolder = [%s]", strFolder.c_str());
-  CLog::Log(LOGDEBUG,"  bFolder   = [%s]", ((int)bFolder ? "true" : "false"));
+  CLog::Log(LOGDEBUG,"  strMovie  = [{}]", strMovie);
+  CLog::Log(LOGDEBUG,"  strFile   = [{}]", strFile);
+  CLog::Log(LOGDEBUG,"  strFolder = [{}]", strFolder);
+  CLog::Log(LOGDEBUG,"  bFolder   = [{}]", ((int)bFolder ? "true" : "false"));
   */
 
   CGUIDialogProgress* pDlgProgress = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogProgress>(WINDOW_DIALOG_PROGRESS);
@@ -358,7 +358,8 @@ bool CGUIWindowVideoBase::ShowIMDB(CFileItemPtr item, const ScraperPtr &info2, b
           URIUtils::GetParentPath(item->GetPath(), strParentDirectory);
           if (m_database.GetTvShowId(strParentDirectory) < 0)
           {
-            CLog::Log(LOGERROR,"%s: could not add episode [%s]. tvshow does not exist yet..", __FUNCTION__, item->GetPath().c_str());
+            CLog::Log(LOGERROR, "{}: could not add episode [{}]. tvshow does not exist yet..",
+                      __FUNCTION__, item->GetPath());
             return false;
           }
         }
@@ -599,7 +600,7 @@ void CGUIWindowVideoBase::GetResumeItemOffset(const CFileItem *item, int64_t& st
       CVideoDatabase db;
       if (!db.Open())
       {
-        CLog::Log(LOGERROR, "%s - Cannot open VideoDatabase", __FUNCTION__);
+        CLog::Log(LOGERROR, "{} - Cannot open VideoDatabase", __FUNCTION__);
         return;
       }
       if (db.GetResumeBookMark(strPath, bookmark))
@@ -786,11 +787,14 @@ std::string CGUIWindowVideoBase::GetResumeString(const CFileItem &item)
   GetResumeItemOffset(&item, startOffset, startPart);
   if (startOffset > 0)
   {
-    resumeString = StringUtils::Format(g_localizeStrings.Get(12022).c_str(),
-        StringUtils::SecondsToTimeString(static_cast<long>(CUtil::ConvertMilliSecsToSecsInt(startOffset)), TIME_FORMAT_HH_MM_SS).c_str());
+    resumeString =
+        StringUtils::Format(g_localizeStrings.Get(12022),
+                            StringUtils::SecondsToTimeString(
+                                static_cast<long>(CUtil::ConvertMilliSecsToSecsInt(startOffset)),
+                                TIME_FORMAT_HH_MM_SS));
     if (startPart > 0)
     {
-      std::string partString = StringUtils::Format(g_localizeStrings.Get(23051).c_str(), startPart);
+      std::string partString = StringUtils::Format(g_localizeStrings.Get(23051), startPart);
       resumeString += " (" + partString + ")";
     }
   }
@@ -961,7 +965,7 @@ bool CGUIWindowVideoBase::OnPlayStackPart(int iItem)
   CDirectory::GetDirectory(path, parts, "", DIR_FLAG_DEFAULTS);
 
   for (int i = 0; i < parts.Size(); i++)
-    parts[i]->SetLabel(StringUtils::Format(g_localizeStrings.Get(23051).c_str(), i+1));
+    parts[i]->SetLabel(StringUtils::Format(g_localizeStrings.Get(23051), i + 1));
 
   CGUIDialogSelect* pDialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
 
@@ -1158,7 +1162,7 @@ bool CGUIWindowVideoBase::OnPlayMedia(int iItem, const std::string &player)
     item.SetPath(pItem->GetVideoInfoTag()->m_strFileNameAndPath);
     item.SetProperty("original_listitem_url", pItem->GetPath());
   }
-  CLog::Log(LOGDEBUG, "%s %s", __FUNCTION__, CURL::GetRedacted(item.GetPath()).c_str());
+  CLog::Log(LOGDEBUG, "{} {}", __FUNCTION__, CURL::GetRedacted(item.GetPath()));
 
   PlayMovie(&item, player);
 

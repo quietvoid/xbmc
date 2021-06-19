@@ -54,7 +54,7 @@ void CGUIDialogAudioSettings::FrameMove()
   // update the volume setting if necessary
   float newVolume = g_application.GetVolumeRatio();
   if (newVolume != m_volume)
-    GetSettingsManager()->SetNumber(SETTING_AUDIO_VOLUME, newVolume);
+    GetSettingsManager()->SetNumber(SETTING_AUDIO_VOLUME, static_cast<double>(newVolume));
 
   if (g_application.GetAppPlayer().HasPlayer())
   {
@@ -62,7 +62,8 @@ void CGUIDialogAudioSettings::FrameMove()
 
     // these settings can change on the fly
     //! @todo (needs special handling): m_settingsManager->SetInt(SETTING_AUDIO_STREAM, g_application.GetAppPlayer().GetAudioStream());
-    GetSettingsManager()->SetNumber(SETTING_AUDIO_DELAY, videoSettings.m_AudioDelay);
+    GetSettingsManager()->SetNumber(SETTING_AUDIO_DELAY,
+                                    static_cast<double>(videoSettings.m_AudioDelay));
     GetSettingsManager()->SetBool(SETTING_AUDIO_PASSTHROUGH, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_AUDIOOUTPUT_PASSTHROUGH));
   }
 
@@ -72,21 +73,21 @@ void CGUIDialogAudioSettings::FrameMove()
 std::string CGUIDialogAudioSettings::FormatDelay(float value, float interval)
 {
   if (fabs(value) < 0.5f * interval)
-    return StringUtils::Format(g_localizeStrings.Get(22003).c_str(), 0.0);
+    return StringUtils::Format(g_localizeStrings.Get(22003), 0.0);
   if (value < 0)
-    return StringUtils::Format(g_localizeStrings.Get(22004).c_str(), fabs(value));
+    return StringUtils::Format(g_localizeStrings.Get(22004), fabs(value));
 
-  return StringUtils::Format(g_localizeStrings.Get(22005).c_str(), value);
+  return StringUtils::Format(g_localizeStrings.Get(22005), value);
 }
 
 std::string CGUIDialogAudioSettings::FormatDecibel(float value)
 {
-  return StringUtils::Format(g_localizeStrings.Get(14054).c_str(), value);
+  return StringUtils::Format(g_localizeStrings.Get(14054), value);
 }
 
 std::string CGUIDialogAudioSettings::FormatPercentAsDecibel(float value)
 {
-  return StringUtils::Format(g_localizeStrings.Get(14054).c_str(), CAEUtil::PercentToGain(value));
+  return StringUtils::Format(g_localizeStrings.Get(14054), CAEUtil::PercentToGain(value));
 }
 
 void CGUIDialogAudioSettings::OnSettingChanged(const std::shared_ptr<const CSetting>& setting)
@@ -315,7 +316,7 @@ void CGUIDialogAudioSettings::AudioStreamsOptionFiller(const SettingConstPtr& se
 {
   int audioStreamCount = g_application.GetAppPlayer().GetAudioStreamCount();
 
-  std::string strFormat = "%s - %s - %d " + g_localizeStrings.Get(10127);
+  std::string strFormat = "{:s} - {:s} - {:d} " + g_localizeStrings.Get(10127);
   std::string strUnknown = "[" + g_localizeStrings.Get(13205) + "]";
 
   // cycle through each audio stream and add it to our list control
@@ -333,10 +334,10 @@ void CGUIDialogAudioSettings::AudioStreamsOptionFiller(const SettingConstPtr& se
     if (info.name.length() == 0)
       info.name = strUnknown;
 
-    strItem = StringUtils::Format(strFormat, strLanguage.c_str(), info.name.c_str(), info.channels);
+    strItem = StringUtils::Format(strFormat, strLanguage, info.name, info.channels);
 
     strItem += FormatFlags(info.flags);
-    strItem += StringUtils::Format(" (%i/%i)", i + 1, audioStreamCount);
+    strItem += StringUtils::Format(" ({}/{})", i + 1, audioStreamCount);
     list.emplace_back(strItem, i);
   }
 
@@ -361,11 +362,11 @@ std::string CGUIDialogAudioSettings::SettingFormatterDelay(
   float fStep = step.asFloat();
 
   if (fabs(fValue) < 0.5f * fStep)
-    return StringUtils::Format(g_localizeStrings.Get(22003).c_str(), 0.0);
+    return StringUtils::Format(g_localizeStrings.Get(22003), 0.0);
   if (fValue < 0)
-    return StringUtils::Format(g_localizeStrings.Get(22004).c_str(), fabs(fValue));
+    return StringUtils::Format(g_localizeStrings.Get(22004), fabs(fValue));
 
-  return StringUtils::Format(g_localizeStrings.Get(22005).c_str(), fValue);
+  return StringUtils::Format(g_localizeStrings.Get(22005), fValue);
 }
 
 std::string CGUIDialogAudioSettings::SettingFormatterPercentAsDecibel(
@@ -382,7 +383,7 @@ std::string CGUIDialogAudioSettings::SettingFormatterPercentAsDecibel(
   if (control->GetFormatLabel() > -1)
     formatString = g_localizeStrings.Get(control->GetFormatLabel());
 
-  return StringUtils::Format(formatString.c_str(), CAEUtil::PercentToGain(value.asFloat()));
+  return StringUtils::Format(formatString, CAEUtil::PercentToGain(value.asFloat()));
 }
 
 std::string CGUIDialogAudioSettings::FormatFlags(StreamFlags flags)
@@ -402,7 +403,7 @@ std::string CGUIDialogAudioSettings::FormatFlags(StreamFlags flags)
   std::string formated = StringUtils::Join(localizedFlags, ", ");
 
   if (!formated.empty())
-    formated = StringUtils::Format(" [%s]", formated);
+    formated = StringUtils::Format(" [{}]", formated);
 
   return formated;
 }

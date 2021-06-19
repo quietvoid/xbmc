@@ -134,7 +134,7 @@ void CGUIDialogPeripheralSettings::InitializeSettings()
   PeripheralPtr peripheral = CServiceBroker::GetPeripherals().GetByPath(m_item->GetPath());
   if (!peripheral)
   {
-    CLog::Log(LOGDEBUG, "%s - no peripheral", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "{} - no peripheral", __FUNCTION__);
     m_initialising = false;
     return;
   }
@@ -164,7 +164,7 @@ void CGUIDialogPeripheralSettings::InitializeSettings()
 
     if (!setting->IsVisible())
     {
-      CLog::Log(LOGDEBUG, "%s - invisible", __FUNCTION__);
+      CLog::Log(LOGDEBUG, "{} - invisible", __FUNCTION__);
       continue;
     }
 
@@ -188,7 +188,7 @@ void CGUIDialogPeripheralSettings::InitializeSettings()
         std::shared_ptr<CSettingInt> settingInt = std::make_shared<CSettingInt>(
             setting->GetId(), *std::static_pointer_cast<CSettingInt>(setting));
         if (settingInt->GetTranslatableOptions().empty())
-          settingInt->SetControl(GetSliderControl("integer", false, -1, usePopup, -1, "%i"));
+          settingInt->SetControl(GetSliderControl("integer", false, -1, usePopup, -1, "{:d}"));
         else
           settingInt->SetControl(GetSpinnerControl("string"));
 
@@ -200,7 +200,7 @@ void CGUIDialogPeripheralSettings::InitializeSettings()
       {
         std::shared_ptr<CSettingNumber> settingNumber = std::make_shared<CSettingNumber>(
             setting->GetId(), *std::static_pointer_cast<CSettingNumber>(setting));
-        settingNumber->SetControl(GetSliderControl("number", false, -1, usePopup, -1, "%2.2f"));
+        settingNumber->SetControl(GetSliderControl("number", false, -1, usePopup, -1, "{:2.2f}"));
 
         settingCopy = std::static_pointer_cast<CSetting>(settingNumber);
         break;
@@ -218,7 +218,7 @@ void CGUIDialogPeripheralSettings::InitializeSettings()
 
       default:
         //! @todo add more types if needed
-        CLog::Log(LOGDEBUG, "%s - unknown type", __FUNCTION__);
+        CLog::Log(LOGDEBUG, "{} - unknown type", __FUNCTION__);
         break;
     }
 

@@ -37,6 +37,7 @@ namespace PVR
     CFileItemPtr GetCurrentListItem(int offset = 0) override;
 
     void Open(const std::shared_ptr<CFileItem>& initialSelection);
+    void SetRadio(bool bIsRadio);
 
   protected:
     void OnInitWindow() override;
@@ -49,6 +50,9 @@ namespace PVR
     void Renumber();
     void SetData(int iItem);
     void RenameChannel(const CFileItemPtr& pItem);
+
+    void ClearChannelOptions();
+    void EnableChannelOptions(bool bEnable);
 
     bool OnPopupMenu(int iItem);
     bool OnContextButton(int itemNumber, CONTEXT_BUTTON button);
@@ -69,12 +73,14 @@ namespace PVR
     bool OnClickButtonNewChannel();
 
     bool PersistChannel(const CFileItemPtr& pItem, const std::shared_ptr<CPVRChannelGroup>& group, unsigned int* iChannelNumber);
-    void SetItemsUnchanged();
+
+    bool HasChangedItems() const;
+    void SetItemChanged(const CFileItemPtr& pItem);
 
     bool m_bIsRadio = false;
     bool m_bMovingMode = false;
-    bool m_bContainsChanges = false;
     bool m_bAllowNewChannel = false;
+    bool m_bAllowRenumber = false;
 
     std::shared_ptr<CFileItem> m_initialSelection;
     int m_iSelected = 0;

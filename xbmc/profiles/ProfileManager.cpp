@@ -172,13 +172,14 @@ bool CProfileManager::Load()
       }
       else
       {
-        CLog::Log(LOGERROR, "CProfileManager: error loading %s, no <profiles> node", file.c_str());
+        CLog::Log(LOGERROR, "CProfileManager: error loading {}, no <profiles> node", file);
         ret = false;
       }
     }
     else
     {
-      CLog::Log(LOGERROR, "CProfileManager: error loading %s, Line %d\n%s", file.c_str(), profilesDoc.ErrorRow(), profilesDoc.ErrorDesc());
+      CLog::Log(LOGERROR, "CProfileManager: error loading {}, Line {}\n{}", file,
+                profilesDoc.ErrorRow(), profilesDoc.ErrorDesc());
       ret = false;
     }
   }
@@ -314,7 +315,8 @@ bool CProfileManager::LoadProfile(unsigned int index)
   // load the new settings
   if (!settings->Load())
   {
-    CLog::Log(LOGFATAL, "CProfileManager: unable to load settings for profile \"%s\"", m_profiles.at(index).getName().c_str());
+    CLog::Log(LOGFATAL, "CProfileManager: unable to load settings for profile \"{}\"",
+              m_profiles.at(index).getName());
     return false;
   }
   settings->SetLoaded();
@@ -398,7 +400,8 @@ void CProfileManager::FinalizeLoadProfile()
 
   if (!g_application.LoadLanguage(true))
   {
-    CLog::Log(LOGFATAL, "Unable to load language for profile \"%s\"", GetCurrentProfile().getName().c_str());
+    CLog::Log(LOGFATAL, "Unable to load language for profile \"{}\"",
+              GetCurrentProfile().getName());
     return;
   }
 
@@ -475,7 +478,7 @@ bool CProfileManager::DeleteProfile(unsigned int index)
 
   const std::string& str = g_localizeStrings.Get(13201);
   dlgYesNo->SetHeading(CVariant{13200});
-  dlgYesNo->SetLine(0, CVariant{StringUtils::Format(str.c_str(), profile->getName().c_str())});
+  dlgYesNo->SetLine(0, CVariant{StringUtils::Format(str, profile->getName())});
   dlgYesNo->SetLine(1, CVariant{""});
   dlgYesNo->SetLine(2, CVariant{""});
   dlgYesNo->Open();
@@ -522,7 +525,8 @@ void CProfileManager::CreateProfileFolders()
   CDirectory::Create(GetBookmarksThumbFolder());
   CDirectory::Create(GetSavestatesFolder());
   for (size_t hex = 0; hex < 16; hex++)
-    CDirectory::Create(URIUtils::AddFileToFolder(GetThumbnailsFolder(), StringUtils::Format("%lx", hex)));
+    CDirectory::Create(
+        URIUtils::AddFileToFolder(GetThumbnailsFolder(), StringUtils::Format("{:x}", hex)));
 
   CDirectory::Create("special://profile/addon_data");
   CDirectory::Create("special://profile/keymaps");
@@ -534,7 +538,7 @@ const CProfile& CProfileManager::GetMasterProfile() const
   if (!m_profiles.empty())
     return m_profiles[0];
 
-  CLog::Log(LOGERROR, "%s: master profile doesn't exist", __FUNCTION__);
+  CLog::Log(LOGERROR, "{}: master profile doesn't exist", __FUNCTION__);
   return EmptyProfile;
 }
 

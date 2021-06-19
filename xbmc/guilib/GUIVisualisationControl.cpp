@@ -286,7 +286,7 @@ void CGUIVisualisationControl::UpdateTrack()
   if (m_albumThumb == "DefaultAlbumCover.png")
     m_albumThumb = "";
   else
-    CLog::Log(LOGDEBUG, "Updating visualization albumart: %s", m_albumThumb.c_str());
+    CLog::Log(LOGDEBUG, "Updating visualization albumart: {}", m_albumThumb);
 
   m_instance->UpdateAlbumart(m_albumThumb.c_str());
 
@@ -298,7 +298,7 @@ void CGUIVisualisationControl::UpdateTrack()
   std::string albumArtist(tag->GetAlbumArtistString());
   std::string genre(StringUtils::Join(tag->GetGenre(), CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator));
 
-  VIS_TRACK track = {0};
+  VIS_TRACK track = {};
   track.title       = tag->GetTitle().c_str();
   track.artist      = artist.c_str();
   track.album       = tag->GetAlbum().c_str();

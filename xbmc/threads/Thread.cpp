@@ -70,7 +70,8 @@ void CThread::Create(bool bAutoDelete)
       StopThread(true);  // so let's just clean up
     else
     { // otherwise we have a problem.
-      CLog::Log(LOGERROR, "%s - fatal error creating thread %s - old thread id not null", __FUNCTION__, m_ThreadName.c_str());
+      CLog::Log(LOGERROR, "{} - fatal error creating thread {} - old thread id not null",
+                __FUNCTION__, m_ThreadName);
       exit(1);
     }
   }
@@ -116,7 +117,7 @@ void CThread::Create(bool bAutoDelete)
 
         if (pThread == nullptr)
         {
-          CLog::Log(LOGERROR,"%s, sanity failed. thread is NULL.",__FUNCTION__);
+          CLog::Log(LOGERROR, "{}, sanity failed. thread is NULL.", __FUNCTION__);
           promise.set_value(false);
           return;
         }
@@ -130,7 +131,8 @@ void CThread::Create(bool bAutoDelete)
 
         pThread->SetThreadInfo();
 
-        CLog::Log(LOGDEBUG,"Thread %s start, auto delete: %s", name.c_str(), (autodelete ? "true" : "false"));
+        CLog::Log(LOGDEBUG, "Thread {} start, auto delete: {}", name,
+                  (autodelete ? "true" : "false"));
 
         pThread->m_StartEvent.Set();
 
@@ -144,16 +146,16 @@ void CThread::Create(bool bAutoDelete)
 
         if (autodelete)
         {
-          CLog::Log(LOGDEBUG,"Thread %s %s terminating (autodelete)", name.c_str(), id.c_str());
+          CLog::Log(LOGDEBUG, "Thread {} {} terminating (autodelete)", name, id);
           delete pThread;
           pThread = NULL;
         }
         else
-          CLog::Log(LOGDEBUG,"Thread %s %s terminating", name.c_str(), id.c_str());
+          CLog::Log(LOGDEBUG, "Thread {} {} terminating", name, id);
       }
       catch (const std::exception& e)
       {
-        CLog::Log(LOGDEBUG,"Thread Terminating with Exception: %s", e.what());
+        CLog::Log(LOGDEBUG, "Thread Terminating with Exception: {}", e.what());
       }
       catch (...)
       {
@@ -198,7 +200,7 @@ void CThread::StopThread(bool bWait /*= true*/)
   if (lthread != nullptr && bWait && !IsCurrentThread())
   {
     lock.Leave();
-    if (!Join(0xFFFFFFFF)) // eh?
+    if (!Join(std::chrono::milliseconds::max())) // eh?
       lthread->join();
     m_thread = nullptr;
   }
@@ -228,15 +230,7 @@ void CThread::TermHandler()
 {
 }
 
-void CThread::Sleep(unsigned int milliseconds)
-{
-  if (milliseconds > 10 && IsCurrentThread())
-    m_StopEvent.WaitMSec(milliseconds);
-  else
-    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
-}
-
-bool CThread::Join(unsigned int milliseconds)
+bool CThread::Join(std::chrono::milliseconds duration)
 {
   CSingleLock l(m_CriticalSection);
   std::thread* lthread = m_thread;
@@ -247,7 +241,7 @@ bool CThread::Join(unsigned int milliseconds)
 
     {
       CSingleExit exit(m_CriticalSection); // don't hold the thread lock while we're waiting
-      std::future_status stat = m_future.wait_for(std::chrono::milliseconds(milliseconds));
+      std::future_status stat = m_future.wait_for(duration);
       if (stat != std::future_status::ready)
         return false;
     }

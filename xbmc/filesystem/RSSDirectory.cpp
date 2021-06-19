@@ -84,7 +84,7 @@ static bool IsPathToThumbnail(const std::string& strPath )
 
 static time_t ParseDate(const std::string & strDate)
 {
-  struct tm pubDate = {0};
+  struct tm pubDate = {};
   //! @todo Handle time zone
   strptime(strDate.c_str(), "%a, %d %b %Y %H:%M:%S", &pubDate);
   // Check the difference between the time of last check and time of the item
@@ -560,12 +560,12 @@ bool CRSSDirectory::GetDirectory(const CURL& url, CFileItemList &items)
   CXBMCTinyXML xmlDoc;
   if (!xmlDoc.LoadFile(strPath))
   {
-    CLog::Log(LOGERROR,"failed to load xml from <%s>. error: <%d>", strPath.c_str(), xmlDoc.ErrorId());
+    CLog::Log(LOGERROR, "failed to load xml from <{}>. error: <{}>", strPath, xmlDoc.ErrorId());
     return false;
   }
   if (xmlDoc.Error())
   {
-    CLog::Log(LOGERROR,"error parsing xml doc from <%s>. error: <%d>", strPath.c_str(), xmlDoc.ErrorId());
+    CLog::Log(LOGERROR, "error parsing xml doc from <{}>. error: <{}>", strPath, xmlDoc.ErrorId());
     return false;
   }
 

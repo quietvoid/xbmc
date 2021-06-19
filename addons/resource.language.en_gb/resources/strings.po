@@ -7471,7 +7471,10 @@ msgctxt "#13600"
 msgid "Apple Remote"
 msgstr ""
 
-#empty string with id 13601
+#: system/settings/darwin_tvos.xml
+msgctxt "#13601"
+msgid "Apple TV"
+msgstr ""
 
 #: system/settings/darwin.xml
 msgctxt "#13602"
@@ -10481,12 +10484,13 @@ msgctxt "#19215"
 msgid "Reminders"
 msgstr ""
 
-#. used by several skins
+#. label for 'all channels' value for 'channels' selector control in pvr radio guide search dialog
+#: xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.cpp
 msgctxt "#19216"
 msgid "All radio channels"
 msgstr ""
 
-#. label for 'all channels' value for 'channels' selector control in pvr guide search dialog
+#. label for 'all channels' value for 'channels' selector control in pvr TV guide search dialog
 #: xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.cpp
 msgctxt "#19217"
 msgid "All TV channels"
@@ -13376,7 +13380,6 @@ msgstr ""
 #: xbmc/dialogs/GUIDialogMediaFilter.cpp
 #: xbmc/playlists/SmartPlaylist.cpp
 #: addons/skin.estuary/xml/Variables.xml
-#: addons/skin.estuary/xml/DialogVideoInfo.xml
 msgctxt "#20416"
 msgid "First aired"
 msgstr ""
@@ -13664,7 +13667,12 @@ msgctxt "#20472"
 msgid "Show all performers for music videos"
 msgstr ""
 
-#empty strings from id 20473 to 21329
+#: addons/skin.estuary/xml/Variables.xml
+msgctxt "#20473"
+msgid "Premiered"
+msgstr ""
+
+#empty strings from id 20474 to 21329
 #up to 21329 is reserved for the video db !! !
 
 #: system/settings/settings.xml
@@ -15757,59 +15765,57 @@ msgctxt "#24152"
 msgid "The add-on is not compatible with this version of Kodi."
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24153"
 msgid "Enable to make the Siri remote match the normal Apple tvOS behavior"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24154"
-msgid "Idle remote handling after N seconds"
+msgid "Consider Siri remote in idle state after N seconds"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24155"
-msgid "After remote idles, the first tap/swipe received will wake it"
+msgid "Time to wait before considering the Siri remote in idle state"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24156"
 msgid "30 Seconds"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24157"
 msgid "60 Seconds"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24158"
 msgid "90 Seconds"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24159"
 msgid "120 Seconds"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24160"
-msgid "Enable Siri remote timeout"
+msgid "Ignore first tap/swipe/pan of the Siri remote after a period of inactivity"
 msgstr ""
 
-#: apple remote
+#: system/settings/darwin_tvos.xml
 msgctxt "#24161"
-msgid "Enable remote input timeout for tap/swipe"
+msgid "This prevents you from accidental tap/swipe/pan action when you grab the remote in your hand"
 msgstr ""
 
+#: system/settings/darwin_tvos.xml
 msgctxt "#24162"
 msgid "Use Kodi virtual keyboard"
 msgstr ""
 
-#: apple remote
-msgctxt "#24163"
-msgid "Match Apple tvOS Standard (Siri remote)"
-msgstr ""
+#empty string with id 24163
 
 #. Header text for yes/no dialog about enable of broken addon
 #: xbmc/addons/gui/GUIHelpers.cpp
@@ -17017,7 +17023,22 @@ msgctxt "#34007"
 msgid "Windows media audio 2 (FFmpeg wmav2)"
 msgstr ""
 
-#empty strings from id 34008 to 34099
+#: system/settings/darwin_tvos.xml
+msgctxt "#34008"
+msgid "When you need to enter some text, Kodi virtual keyboard will show up instead of the built-in tvOS keyboard"
+msgstr ""
+
+#: system/settings/darwin_tvos.xml
+msgctxt "#34009"
+msgid "Siri remote pan gesture horizontal sensitivity"
+msgstr ""
+
+#: system/settings/darwin_tvos.xml
+msgctxt "#34010"
+msgid "Siri remote pan gesture vertical sensitivity"
+msgstr ""
+
+#empty strings from id 34011 to 34099
 
 #: system/settings/settings.xml
 msgctxt "#34100"

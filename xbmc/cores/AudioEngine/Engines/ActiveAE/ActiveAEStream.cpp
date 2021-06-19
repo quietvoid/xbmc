@@ -15,6 +15,7 @@
 #include "utils/log.h"
 
 using namespace ActiveAE;
+using namespace std::chrono_literals;
 
 CActiveAEStream::CActiveAEStream(AEAudioFormat *format, unsigned int streamid, CActiveAE *ae)
 {
@@ -97,7 +98,7 @@ void CActiveAEStream::InitRemapper()
 
   if(needRemap)
   {
-    CLog::Log(LOGDEBUG, "CActiveAEStream::%s - initialize remapper", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "CActiveAEStream::{} - initialize remapper", __FUNCTION__);
 
     m_remapper = CAEResampleFactory::Create();
     uint64_t avLayout = CAEUtil::GetAVChannelLayout(m_format.m_channelLayout);
@@ -175,7 +176,7 @@ void CActiveAEStream::RemapBuffer()
 
     if (samples != m_currentBuffer->pkt->nb_samples)
     {
-      CLog::Log(LOGERROR, "CActiveAEStream::%s - error remapping", __FUNCTION__);
+      CLog::Log(LOGERROR, "CActiveAEStream::{} - error remapping", __FUNCTION__);
     }
 
     // swap sound packets
@@ -208,7 +209,7 @@ double CActiveAEStream::CalcResampleRatio(double error)
   }
 
   double ret = 1.0 / clockspeed + proportional + m_resampleIntegral;
-  //CLog::Log(LOGINFO,"----- error: %f, rr: %f, prop: %f, int: %f",
+  //CLog::Log(LOGINFO,"----- error: {:f}, rr: {:f}, prop: {:f}, int: {:f}",
   //                    error, ret, proportional, m_resampleIntegral);
   return ret;
 }
@@ -275,7 +276,7 @@ unsigned int CActiveAEStream::AddData(const uint8_t* const *data, unsigned int o
               diff = std::min(diff, 6000);
               CLog::Log(LOGINFO,
                         "CActiveAEStream::AddData - messy timestamps, increasing interval for "
-                        "measuring average error to %d ms",
+                        "measuring average error to {} ms",
                         diff);
               m_errorInterval = diff;
             }
@@ -302,11 +303,12 @@ unsigned int CActiveAEStream::AddData(const uint8_t* const *data, unsigned int o
         if (m_format.m_dataFormat != AE_FMT_RAW)
         {
           m_currentBuffer->pkt->nb_samples += minFrames;
-          m_bufferedTime += (double)minFrames / m_currentBuffer->pkt->config.sample_rate;
+          m_bufferedTime +=
+              static_cast<float>(minFrames) / m_currentBuffer->pkt->config.sample_rate;
         }
         else
         {
-          m_bufferedTime += m_format.m_streamInfo.GetDuration() / 1000;
+          m_bufferedTime += static_cast<float>(m_format.m_streamInfo.GetDuration()) / 1000;
           m_currentBuffer->pkt->nb_samples += minFrames;
           rawPktComplete = true;
         }
@@ -342,7 +344,7 @@ unsigned int CActiveAEStream::AddData(const uint8_t* const *data, unsigned int o
         break;
       }
     }
-    if (!m_inMsgEvent.WaitMSec(200))
+    if (!m_inMsgEvent.Wait(200ms))
       break;
   }
   return copied;
@@ -370,17 +372,17 @@ bool CActiveAEStream::IsBuffering()
 
 double CActiveAEStream::GetCacheTime()
 {
-  return m_activeAE->GetCacheTime(this);
+  return static_cast<double>(m_activeAE->GetCacheTime(this));
 }
 
 double CActiveAEStream::GetCacheTotal()
 {
-  return m_activeAE->GetCacheTotal();
+  return static_cast<double>(m_activeAE->GetCacheTotal());
 }
 
 double CActiveAEStream::GetMaxDelay()
 {
-  return m_activeAE->GetMaxDelay();
+  return static_cast<double>(m_activeAE->GetMaxDelay());
 }
 
 void CActiveAEStream::Pause()
@@ -450,7 +452,7 @@ void CActiveAEStream::Drain(bool wait)
     else if (!wait)
       return;
 
-    m_inMsgEvent.WaitMSec(timer.MillisLeft());
+    m_inMsgEvent.Wait(std::chrono::milliseconds(timer.MillisLeft()));
   }
   CLog::Log(LOGERROR, "CActiveAEStream::Drain - timeout out");
 }
@@ -740,7 +742,7 @@ void CActiveAEStreamBuffers::SetRR(double rr, double atempoThreshold)
 double CActiveAEStreamBuffers::GetRR()
 {
   double tempo = m_resampleBuffers->GetRR();
-  tempo /= m_atempoBuffers->GetTempo();
+  tempo /= static_cast<double>(m_atempoBuffers->GetTempo());
   return tempo;
 }
 

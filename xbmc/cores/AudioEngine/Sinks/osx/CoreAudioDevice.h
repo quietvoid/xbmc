@@ -9,6 +9,7 @@
 #pragma once
 
 #include "cores/AudioEngine/Sinks/osx/CoreAudioStream.h"
+#include "threads/SystemClock.h"
 
 #include <list>
 #include <string>
@@ -76,7 +77,7 @@ protected:
   AudioDeviceIOProc m_IoProc = nullptr;
   AudioObjectPropertyListenerProc m_ObjectListenerProc = nullptr;
 
-  Float64 m_SampleRateRestore = 0.0f;
+  Float64 m_SampleRateRestore = 0.0;
   pid_t m_HogPid = -1;
   unsigned int m_frameSize = 0;
   unsigned int m_OutputBufferIndex = 0;

@@ -49,6 +49,8 @@ extern "C" {
 #endif
 
 using namespace VAAPI;
+using namespace std::chrono_literals;
+
 #define NUM_RENDER_PICS 7
 
 constexpr auto SETTING_VIDEOPLAYER_USEVAAPI = "videoplayer.usevaapi";
@@ -215,8 +217,8 @@ bool CVAAPIContext::CreateContext()
     return false;
   }
 
-  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - initialize version %d.%d", major_version, minor_version);
-  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - driver in use: %s", vaQueryVendorString(m_display));
+  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - initialize version {}.{}", major_version, minor_version);
+  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - driver in use: {}", vaQueryVendorString(m_display));
 
   QueryCaps();
   if (!m_profileCount)
@@ -257,9 +259,9 @@ void CVAAPIContext::QueryCaps()
   for(int i = 0; i < m_profileCount; i++)
   {
 #if VA_CHECK_VERSION(1, 0, 0)
-    CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - profile %s", vaProfileStr(m_profiles[i]));
+    CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - profile {}", vaProfileStr(m_profiles[i]));
 #else
-    CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - profile %d", m_profiles[i]);
+    CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI - profile {}", m_profiles[i]);
 #endif
   }
 }
@@ -678,7 +680,7 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
   m_vaapiConfig.attrib = m_vaapiConfig.context->GetAttrib(profile);
   if ((m_vaapiConfig.attrib.value & (VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV420_10BPP)) == 0)
   {
-    CLog::Log(LOGERROR, "VAAPI - invalid yuv format %x", m_vaapiConfig.attrib.value);
+    CLog::Log(LOGERROR, "VAAPI - invalid yuv format {:x}", m_vaapiConfig.attrib.value);
     return false;
   }
 
@@ -735,7 +737,7 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
 
 void CDecoder::Close()
 {
-  CLog::Log(LOGINFO, "VAAPI::%s", __FUNCTION__);
+  CLog::Log(LOGINFO, "VAAPI::{}", __FUNCTION__);
 
   CSingleLock lock(m_DecoderSection);
 
@@ -776,13 +778,13 @@ long CDecoder::Release()
       reply->Release();
       if (!success)
       {
-        CLog::Log(LOGERROR, "VAAPI::%s - pre-cleanup returned error", __FUNCTION__);
+        CLog::Log(LOGERROR, "VAAPI::{} - pre-cleanup returned error", __FUNCTION__);
         m_DisplayState = VAAPI_ERROR;
       }
     }
     else
     {
-      CLog::Log(LOGERROR, "VAAPI::%s - pre-cleanup timed out", __FUNCTION__);
+      CLog::Log(LOGERROR, "VAAPI::{} - pre-cleanup timed out", __FUNCTION__);
       m_DisplayState = VAAPI_ERROR;
     }
 
@@ -822,8 +824,8 @@ int CDecoder::FFGetBuffer(AVCodecContext *avctx, AVFrame *pic, int flags)
     uint16_t decoded, processed, render;
     bool vpp;
     va->m_bufferStats.Get(decoded, processed, render, vpp);
-    CLog::Log(LOGWARNING, "VAAPI::FFGetBuffer - no surface available - dec: %d, render: %d",
-                         decoded, render);
+    CLog::Log(LOGWARNING, "VAAPI::FFGetBuffer - no surface available - dec: {}, render: {}",
+              decoded, render);
     va->m_getBufferError++;
     return -1;
   }
@@ -837,7 +839,7 @@ int CDecoder::FFGetBuffer(AVCodecContext *avctx, AVFrame *pic, int flags)
   AVBufferRef *buffer = av_buffer_create(pic->data[3], 0, CVAAPIContext::FFReleaseBuffer, va, 0);
   if (!buffer)
   {
-    CLog::Log(LOGERROR, "VAAPI::%s - error creating buffer", __FUNCTION__);
+    CLog::Log(LOGERROR, "VAAPI::{} - error creating buffer", __FUNCTION__);
     return -1;
   }
   pic->buf[0] = buffer;
@@ -964,12 +966,14 @@ CDVDVideoCodec::VCReturn CDecoder::Decode(AVCodecContext* avctx, AVFrame* pFrame
       }
     }
 
-    if (!m_inMsgEvent.WaitMSec(2000))
+    if (!m_inMsgEvent.Wait(2000ms))
       break;
   }
 
-  CLog::Log(LOGERROR, "VAAPI::%s - timed out waiting for output message - decoded: %d, proc: %d, has free surface: %s",
-                      __FUNCTION__, decoded, processed, m_videoSurfaces.HasFree() ? "yes" : "no");
+  CLog::Log(LOGERROR,
+            "VAAPI::{} - timed out waiting for output message - decoded: {}, proc: {}, has free "
+            "surface: {}",
+            __FUNCTION__, decoded, processed, m_videoSurfaces.HasFree() ? "yes" : "no");
   m_DisplayState = VAAPI_ERROR;
 
   return CDVDVideoCodec::VC_ERROR;
@@ -986,7 +990,7 @@ CDVDVideoCodec::VCReturn CDecoder::Check(AVCodecContext* avctx)
   if (state == VAAPI_LOST)
   {
     CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI::Check waiting for display reset event");
-    if (!m_DisplayEvent.WaitMSec(4000))
+    if (!m_DisplayEvent.Wait(4000ms))
     {
       CLog::Log(LOGERROR, "VAAPI::Check - device didn't reset in reasonable time");
       state = VAAPI_RESET;
@@ -1072,7 +1076,7 @@ void CDecoder::Reset()
     reply->Release();
     if (!success)
     {
-      CLog::Log(LOGERROR, "VAAPI::%s - flush returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "VAAPI::{} - flush returned error", __FUNCTION__);
       m_DisplayState = VAAPI_ERROR;
     }
     else
@@ -1083,7 +1087,7 @@ void CDecoder::Reset()
   }
   else
   {
-    CLog::Log(LOGERROR, "VAAPI::%s - flush timed out", __FUNCTION__);
+    CLog::Log(LOGERROR, "VAAPI::{} - flush timed out", __FUNCTION__);
     m_DisplayState = VAAPI_ERROR;
   }
 }
@@ -1117,7 +1121,7 @@ bool CDecoder::ConfigVAAPI()
   m_vaapiConfig.attrib = m_vaapiConfig.context->GetAttrib(m_vaapiConfig.profile);
   if ((m_vaapiConfig.attrib.value & (VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV420_10BPP)) == 0)
   {
-    CLog::Log(LOGERROR, "VAAPI - invalid yuv format %x", m_vaapiConfig.attrib.value);
+    CLog::Log(LOGERROR, "VAAPI - invalid yuv format {:x}", m_vaapiConfig.attrib.value);
     return false;
   }
 
@@ -1173,7 +1177,7 @@ bool CDecoder::ConfigVAAPI()
     if (!success)
     {
       reply->Release();
-      CLog::Log(LOGERROR, "VAAPI::%s - vaapi output returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "VAAPI::{} - vaapi output returned error", __FUNCTION__);
       m_vaapiOutput.Dispose();
       return false;
     }
@@ -1181,7 +1185,7 @@ bool CDecoder::ConfigVAAPI()
   }
   else
   {
-    CLog::Log(LOGERROR, "VAAPI::%s - failed to init output", __FUNCTION__);
+    CLog::Log(LOGERROR, "VAAPI::{} - failed to init output", __FUNCTION__);
     m_vaapiOutput.Dispose();
     return false;
   }
@@ -1203,7 +1207,8 @@ void CDecoder::FiniVAAPIOutput()
   m_vaapiConfigured = false;
 
   // destroy surfaces
-  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI::FiniVAAPIOutput destroying %d video surfaces", m_videoSurfaces.Size());
+  CLog::Log(LOGDEBUG, LOGVIDEO, "VAAPI::FiniVAAPIOutput destroying {} video surfaces",
+            m_videoSurfaces.Size());
   VASurfaceID surf;
   while((surf = m_videoSurfaces.RemoveNext()) != VA_INVALID_SURFACE)
   {
@@ -1412,7 +1417,8 @@ CVaapiRenderPicture* CVaapiBufferPool::ProcessSyncPicture()
 
     if (!retPic->valid)
     {
-      CLog::Log(LOGDEBUG, LOGVIDEO, "CVaapiRenderPicture::%s - return of invalid render pic", __FUNCTION__);
+      CLog::Log(LOGDEBUG, LOGVIDEO, "CVaapiRenderPicture::{} - return of invalid render pic",
+                __FUNCTION__);
       retPic = nullptr;
     }
     break;
@@ -1565,7 +1571,8 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
       }
       {
         std::string portName = port == NULL ? "timer" : port->portName;
-        CLog::Log(LOGWARNING, "COutput::%s - signal: %d form port: %s not handled for state: %d", __FUNCTION__, signal, portName.c_str(), m_state);
+        CLog::Log(LOGWARNING, "COutput::{} - signal: {} form port: {} not handled for state: {}",
+                  __FUNCTION__, signal, portName, m_state);
       }
       return;
 
@@ -1791,7 +1798,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
       break;
 
     default: // we are in no state, should not happen
-      CLog::Log(LOGERROR, "COutput::%s - no valid state: %d", __FUNCTION__, m_state);
+      CLog::Log(LOGERROR, "COutput::{} - no valid state: {}", __FUNCTION__, m_state);
       return;
     }
   } // for
@@ -1847,7 +1854,7 @@ void COutput::Process()
     }
 
     // wait for message
-    else if (m_outMsgEvent.WaitMSec(m_extTimeout))
+    else if (m_outMsgEvent.Wait(std::chrono::milliseconds(m_extTimeout)))
     {
       continue;
     }
@@ -2926,14 +2933,10 @@ bool CFFmpegPostproc::Init(EINTERLACEMETHOD method)
   const AVFilter* srcFilter = avfilter_get_by_name("buffer");
   const AVFilter* outFilter = avfilter_get_by_name("buffersink");
 
-  std::string args = StringUtils::Format("%d:%d:%d:%d:%d:%d:%d",
-                                        m_config.vidWidth,
-                                        m_config.vidHeight,
-                                        AV_PIX_FMT_NV12,
-                                        1,
-                                        1,
-                                        (m_config.aspect.num != 0) ? m_config.aspect.num : 1,
-                                        (m_config.aspect.num != 0) ? m_config.aspect.den : 1);
+  std::string args = StringUtils::Format("{}:{}:{}:{}:{}:{}:{}", m_config.vidWidth,
+                                         m_config.vidHeight, AV_PIX_FMT_NV12, 1, 1,
+                                         (m_config.aspect.num != 0) ? m_config.aspect.num : 1,
+                                         (m_config.aspect.num != 0) ? m_config.aspect.den : 1);
 
   if (avfilter_graph_create_filter(&m_pFilterIn, srcFilter, "src", args.c_str(), NULL, m_pFilterGraph) < 0)
   {

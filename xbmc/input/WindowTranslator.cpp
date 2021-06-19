@@ -234,11 +234,11 @@ int CWindowTranslator::TranslateWindow(const std::string& window)
   }
 
   // Run through the window structure
-  auto it = WindowMappingByName.find(WindowMapItem{strWindow.c_str()});
+  auto it = WindowMappingByName.find({strWindow.c_str(), {}});
   if (it != WindowMappingByName.end())
     return it->windowId;
 
-  CLog::Log(LOGERROR, "Window Translator: Can't find window %s", window.c_str());
+  CLog::Log(LOGERROR, "Window Translator: Can't find window {}", window);
 
   return WINDOW_INVALID;
 }

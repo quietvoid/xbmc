@@ -123,7 +123,7 @@ void CWinEventsAndroid::Process()
   while (!m_bStop)
   {
     // run a 10ms (timeout) wait cycle
-    CThread::Sleep(timeout);
+    CThread::Sleep(std::chrono::milliseconds(timeout));
 
     CSingleLock lock(m_lasteventCond);
 
@@ -153,7 +153,8 @@ void CWinEventsAndroid::Process()
 
         if (repeatDuration >= holdTimeout)
         {
-          CLog::Log(LOGDEBUG, "hold  ->repeat, size(%d), repeatDuration(%d)", m_lastevent.size(), repeatDuration);
+          CLog::Log(LOGDEBUG, "hold  ->repeat, size({}), repeatDuration({})", m_lastevent.size(),
+                    repeatDuration);
           state = EVENT_STATE_REPEAT;
         }
         break;

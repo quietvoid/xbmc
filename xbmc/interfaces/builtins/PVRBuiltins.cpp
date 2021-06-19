@@ -58,7 +58,8 @@ static int SeekPercentage(const std::vector<std::string>& params)
     const float fTimeshiftPercentage = static_cast<float>(std::atof(params.front().c_str()));
     if (fTimeshiftPercentage < 0 || fTimeshiftPercentage > 100)
     {
-      CLog::Log(LOGERROR,"PVR.SeekPercentage(n) - Invalid argument (%f), must be in range 0-100", fTimeshiftPercentage);
+      CLog::Log(LOGERROR, "PVR.SeekPercentage(n) - Invalid argument ({:f}), must be in range 0-100",
+                fTimeshiftPercentage);
     }
     else if (g_application.GetAppPlayer().IsPlaying())
     {
@@ -70,7 +71,9 @@ static int SeekPercentage(const std::vector<std::string>& params)
       int iTimeshiftBufferStart = 0;
       infoMgr.GetInt(iTimeshiftBufferStart, PVR_TIMESHIFT_PROGRESS_BUFFER_START);
 
-      float fPlayerPercentage = static_cast<float>(iTimeshiftProgressDuration) / g_application.GetTotalTime() * (fTimeshiftPercentage - iTimeshiftBufferStart);
+      float fPlayerPercentage = static_cast<float>(iTimeshiftProgressDuration) /
+                                static_cast<float>(g_application.GetTotalTime()) *
+                                (fTimeshiftPercentage - static_cast<float>(iTimeshiftBufferStart));
       fPlayerPercentage = std::max(0.0f, std::min(fPlayerPercentage, 100.0f));
 
       g_application.SeekPercentage(fPlayerPercentage);

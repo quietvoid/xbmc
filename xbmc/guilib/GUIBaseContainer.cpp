@@ -747,13 +747,12 @@ EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint &point, const CMouseEv
   { // do the drag and validate our offset (corrects for end of scroll)
     m_scroller.SetValue(m_scroller.GetValue() - ((m_orientation == HORIZONTAL) ? event.m_offsetX : event.m_offsetY));
     float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
-    int offset = MathUtils::round_int(m_scroller.GetValue() / size);
+    int offset = MathUtils::round_int(static_cast<double>(m_scroller.GetValue() / size));
     m_lastScrollStartTimer.Stop();
     m_scrollTimer.Start();
     const int absCursor = CorrectOffset(GetOffset(), GetCursor());
     SetOffset(offset);
     ValidateOffset();
-    CGUIBaseContainer::SetCursor(absCursor - CorrectOffset(GetOffset(), 0));
     // Notify Application if Inertial scrolling reaches lists end
     if (m_waitForScrollEnd)
     {
@@ -765,6 +764,10 @@ EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint &point, const CMouseEv
       else
         m_lastScrollValue = m_scroller.GetValue();
     }
+    else
+    {
+      CGUIBaseContainer::SetCursor(absCursor - CorrectOffset(GetOffset(), 0));
+    }
     return EVENT_RESULT_HANDLED;
   }
   else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
@@ -775,7 +778,7 @@ EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint &point, const CMouseEv
     // and compute the nearest offset from this and scroll there
     float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
     float offset = m_scroller.GetValue() / size;
-    int toOffset = MathUtils::round_int(offset);
+    int toOffset = MathUtils::round_int(static_cast<double>(offset));
     if (toOffset < offset)
       SetOffset(toOffset+1);
     else
@@ -845,7 +848,7 @@ std::string CGUIBaseContainer::GetDescription() const
   {
     CGUIListItemPtr pItem = m_items[item];
     if (pItem->m_bIsFolder)
-      strLabel = StringUtils::Format("[%s]", pItem->GetLabel().c_str());
+      strLabel = StringUtils::Format("[{}]", pItem->GetLabel());
     else
       strLabel = pItem->GetLabel();
   }
@@ -1251,7 +1254,7 @@ bool CGUIBaseContainer::InsideLayout(const CGUIListItemLayout *layout, const CPo
 #ifdef _DEBUG
 void CGUIBaseContainer::DumpTextureUse()
 {
-  CLog::Log(LOGDEBUG, "%s for container %u", __FUNCTION__, GetID());
+  CLog::Log(LOGDEBUG, "{} for container {}", __FUNCTION__, GetID());
   for (unsigned int i = 0; i < m_items.size(); ++i)
   {
     CGUIListItemPtr item = m_items[i];
@@ -1334,20 +1337,20 @@ std::string CGUIBaseContainer::GetLabel(int info) const
   switch (info)
   {
   case CONTAINER_NUM_PAGES:
-    label = StringUtils::Format("%u", (GetRows() + m_itemsPerPage - 1) / m_itemsPerPage);
+    label = std::to_string((GetRows() + m_itemsPerPage - 1) / m_itemsPerPage);
     break;
   case CONTAINER_CURRENT_PAGE:
-    label = StringUtils::Format("%u", GetCurrentPage());
+    label = std::to_string(GetCurrentPage());
     break;
   case CONTAINER_POSITION:
-    label = StringUtils::Format("%i", GetCursor());
+    label = std::to_string(GetCursor());
     break;
   case CONTAINER_CURRENT_ITEM:
     {
       if (m_items.size() && m_items[0]->IsFileItem() && (std::static_pointer_cast<CFileItem>(m_items[0]))->IsParentFolder())
-        label = StringUtils::Format("%i", GetSelectedItem());
+        label = std::to_string(GetSelectedItem());
       else
-        label = StringUtils::Format("%i", GetSelectedItem() + 1);
+        label = std::to_string(GetSelectedItem() + 1);
     }
     break;
   case CONTAINER_NUM_ALL_ITEMS:
@@ -1355,9 +1358,9 @@ std::string CGUIBaseContainer::GetLabel(int info) const
     {
       unsigned int numItems = GetNumItems();
       if (info == CONTAINER_NUM_ITEMS && numItems && m_items[0]->IsFileItem() && (std::static_pointer_cast<CFileItem>(m_items[0]))->IsParentFolder())
-        label = StringUtils::Format("%u", numItems-1);
+        label = std::to_string(numItems - 1);
       else
-        label = StringUtils::Format("%u", numItems);
+        label = std::to_string(numItems);
     }
     break;
   case CONTAINER_NUM_NONFOLDER_ITEMS:
@@ -1368,7 +1371,7 @@ std::string CGUIBaseContainer::GetLabel(int info) const
         if (!item->m_bIsFolder)
           numItems++;
       }
-      label = StringUtils::Format("%u", numItems);
+      label = std::to_string(numItems);
     }
     break;
   default:

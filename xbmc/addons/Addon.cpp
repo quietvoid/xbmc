@@ -37,13 +37,13 @@ namespace ADDON
 {
 
 CAddon::CAddon(const AddonInfoPtr& addonInfo, TYPE addonType)
-  : m_addonInfo(addonInfo)
-  , m_userSettingsPath()
-  , m_loadSettingsFailed(false)
-  , m_hasUserSettings(false)
-  , m_profilePath(StringUtils::Format("special://profile/addon_data/%s/", m_addonInfo->ID().c_str()))
-  , m_settings(nullptr)
-  , m_type(addonType == ADDON_UNKNOWN ? addonInfo->MainType() : addonType)
+  : m_addonInfo(addonInfo),
+    m_userSettingsPath(),
+    m_loadSettingsFailed(false),
+    m_hasUserSettings(false),
+    m_profilePath(StringUtils::Format("special://profile/addon_data/{}/", m_addonInfo->ID())),
+    m_settings(nullptr),
+    m_type(addonType == ADDON_UNKNOWN ? addonInfo->MainType() : addonType)
 {
   m_userSettingsPath = URIUtils::AddFileToFolder(m_profilePath, "settings.xml");
 }
@@ -88,8 +88,9 @@ bool CAddon::LoadSettings(bool bForce, bool loadUserSettings /* = true */)
   {
     if (CFile::Exists(addonSettingsDefinitionFile))
     {
-      CLog::Log(LOGERROR, "CAddon[%s]: unable to load: %s, Line %d\n%s",
-        ID().c_str(), addonSettingsDefinitionFile.c_str(), addonSettingsDefinitionDoc.ErrorRow(), addonSettingsDefinitionDoc.ErrorDesc());
+      CLog::Log(LOGERROR, "CAddon[{}]: unable to load: {}, Line {}\n{}", ID(),
+                addonSettingsDefinitionFile, addonSettingsDefinitionDoc.ErrorRow(),
+                addonSettingsDefinitionDoc.ErrorDesc());
     }
 
     return false;
@@ -98,7 +99,7 @@ bool CAddon::LoadSettings(bool bForce, bool loadUserSettings /* = true */)
   // initialize the settings definition
   if (!GetSettings()->Initialize(addonSettingsDefinitionDoc))
   {
-    CLog::Log(LOGERROR, "CAddon[%s]: failed to initialize addon settings", ID().c_str());
+    CLog::Log(LOGERROR, "CAddon[{}]: failed to initialize addon settings", ID());
     return false;
   }
 
@@ -148,7 +149,8 @@ bool CAddon::LoadUserSettings()
   CXBMCTinyXML doc;
   if (!doc.LoadFile(m_userSettingsPath))
   {
-    CLog::Log(LOGERROR, "CAddon[%s]: failed to load addon settings from %s", ID().c_str(), m_userSettingsPath.c_str());
+    CLog::Log(LOGERROR, "CAddon[{}]: failed to load addon settings from {}", ID(),
+              m_userSettingsPath);
     return false;
   }
 
@@ -249,7 +251,7 @@ void CAddon::UpdateSetting(const std::string& key, const std::string& value)
     setting = m_settings->AddSetting(key, value);
     if (setting == nullptr)
     {
-      CLog::Log(LOGERROR, "CAddon[%s]: failed to add undefined setting \"%s\"", ID().c_str(), key.c_str());
+      CLog::Log(LOGERROR, "CAddon[{}]: failed to add undefined setting \"{}\"", ID(), key);
       return;
     }
   }
@@ -272,7 +274,7 @@ bool UpdateSettingValue(CAddon& addon, const std::string& key, typename TSetting
     setting = addon.GetSettings()->AddSetting(key, value);
     if (setting == nullptr)
     {
-      CLog::Log(LOGERROR, "CAddon[%s]: failed to add undefined setting \"%s\"", addon.ID().c_str(), key.c_str());
+      CLog::Log(LOGERROR, "CAddon[{}]: failed to add undefined setting \"{}\"", addon.ID(), key);
       return false;
     }
   }
@@ -313,7 +315,7 @@ bool CAddon::SettingsFromXML(const CXBMCTinyXML &doc, bool loadDefaults /* = fal
   {
     if (!GetSettings()->Initialize(doc))
     {
-      CLog::Log(LOGERROR, "CAddon[%s]: failed to initialize addon settings", ID().c_str());
+      CLog::Log(LOGERROR, "CAddon[{}]: failed to initialize addon settings", ID());
       return false;
     }
   }
@@ -325,7 +327,7 @@ bool CAddon::SettingsFromXML(const CXBMCTinyXML &doc, bool loadDefaults /* = fal
   // try to load the setting's values from the given XML
   if (!GetSettings()->Load(doc))
   {
-    CLog::Log(LOGERROR, "CAddon[%s]: failed to load user settings", ID().c_str());
+    CLog::Log(LOGERROR, "CAddon[{}]: failed to load user settings", ID());
     return false;
   }
 
@@ -341,20 +343,23 @@ bool CAddon::SettingsToXML(CXBMCTinyXML &doc) const
 
   if (!m_settings->Save(doc))
   {
-    CLog::Log(LOGERROR, "CAddon[%s]: failed to save addon settings", ID().c_str());
+    CLog::Log(LOGERROR, "CAddon[{}]: failed to save addon settings", ID());
     return false;
   }
 
   return true;
 }
 
-CAddonSettings* CAddon::GetSettings() const
+std::shared_ptr<CAddonSettings> CAddon::GetSettings()
 {
   // initialize addon settings if necessary
   if (m_settings == nullptr)
+  {
     m_settings = std::make_shared<CAddonSettings>(enable_shared_from_this::shared_from_this());
+    LoadSettings(false);
+  }
 
-  return m_settings.get();
+  return m_settings;
 }
 
 std::string CAddon::LibPath() const

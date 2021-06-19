@@ -57,6 +57,7 @@
 
 using namespace XFILE;
 using namespace KODI::MESSAGING;
+using namespace std::chrono_literals;
 
 CAirTunesServer *CAirTunesServer::ServerInstance = NULL;
 std::string CAirTunesServer::m_macAddress;
@@ -227,7 +228,7 @@ void CAirTunesServer::Process()
     if (m_streamStarted)
       SetupRemoteControl();// check for remote controls
 
-    m_processActions.WaitMSec(1000);// timeout for being able to stop
+    m_processActions.Wait(1000ms); // timeout for being able to stop
     std::list<CAction> currentActions;
     {
       CSingleLock lock(m_actionQueueLock);// copy and clear the source queue
@@ -414,12 +415,12 @@ void CAirTunesServer::InformPlayerAboutPlayTimes()
     unsigned int position = m_cachedCurrentTime - m_cachedStartTime;
     duration /= m_sampleRate;
     position /= m_sampleRate;
-  
+
     if (g_application.GetAppPlayer().IsPlaying())
     {
       g_application.GetAppPlayer().SetTime(position * 1000);
       g_application.GetAppPlayer().SetTotalTime(duration * 1000);
-      
+
       // reset play times now that we have informed the player
       m_cachedEndTime = 0;
       m_cachedCurrentTime = 0;
@@ -494,7 +495,7 @@ void  CAirTunesServer::AudioOutputFunctions::audio_process(void *cls, void *sess
 {
   XFILE::CPipeFile *pipe=(XFILE::CPipeFile *)cls;
   pipe->Write(buffer, buflen);
-  
+
   // in case there are some play times cached that are not yet sent to the player - do it here
   InformPlayerAboutPlayTimes();
 }
@@ -561,7 +562,7 @@ void shairplay_log(void *cls, int level, const char *msg)
     default:
       break;
   }
-    CLog::Log(xbmcLevel, "AIRTUNES: %s", msg);
+  CLog::Log(xbmcLevel, "AIRTUNES: {}", msg);
 }
 
 bool CAirTunesServer::StartServer(int port, bool nonlocal, bool usePassword, const std::string &password/*=""*/)
@@ -594,9 +595,7 @@ bool CAirTunesServer::StartServer(int port, bool nonlocal, bool usePassword, con
   if (ServerInstance->Initialize(pw))
   {
     success = true;
-    std::string appName = StringUtils::Format("%s@%s",
-                                             m_macAddress.c_str(),
-                                             CSysInfo::GetDeviceName().c_str());
+    std::string appName = StringUtils::Format("{}@{}", m_macAddress, CSysInfo::GetDeviceName());
 
     std::vector<std::pair<std::string, std::string> > txt;
     txt.emplace_back("txtvers", "1");

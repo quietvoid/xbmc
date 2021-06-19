@@ -106,7 +106,8 @@ bool CThumbExtractor::DoWork()
   bool result=false;
   if (m_thumb)
   {
-    CLog::Log(LOGDEBUG,"%s - trying to extract thumb from video file %s", __FUNCTION__, CURL::GetRedacted(m_item.GetPath()).c_str());
+    CLog::Log(LOGDEBUG, "{} - trying to extract thumb from video file {}", __FUNCTION__,
+              CURL::GetRedacted(m_item.GetPath()));
     // construct the thumb cache file
     CTextureDetails details;
     details.file = CTextureCache::GetCacheFile(m_target) + ".jpg";
@@ -135,7 +136,8 @@ bool CThumbExtractor::DoWork()
            !m_item.GetVideoInfoTag()->HasStreamDetails()))
   {
     // No tag or no details set, so extract them
-    CLog::Log(LOGDEBUG,"%s - trying to extract filestream details from video file %s", __FUNCTION__, CURL::GetRedacted(m_item.GetPath()).c_str());
+    CLog::Log(LOGDEBUG, "{} - trying to extract filestream details from video file {}",
+              __FUNCTION__, CURL::GetRedacted(m_item.GetPath()));
     result = CDVDFileInfo::GetFileStreamDetails(&m_item);
   }
 
@@ -758,7 +760,7 @@ void CVideoThumbLoader::DetectAndAddMissingItemData(CFileItem &item)
     // add audio language properties
     for (int i = 1; i <= details.GetAudioStreamCount(); i++)
     {
-      std::string index = StringUtils::Format("%i", i);
+      std::string index = std::to_string(i);
       item.SetProperty("AudioChannels." + index, details.GetAudioChannels(i));
       item.SetProperty("AudioCodec."    + index, details.GetAudioCodec(i).c_str());
       item.SetProperty("AudioLanguage." + index, details.GetAudioLanguage(i).c_str());
@@ -767,7 +769,7 @@ void CVideoThumbLoader::DetectAndAddMissingItemData(CFileItem &item)
     // add subtitle language properties
     for (int i = 1; i <= details.GetSubtitleStreamCount(); i++)
     {
-      std::string index = StringUtils::Format("%i", i);
+      std::string index = std::to_string(i);
       item.SetProperty("SubtitleLanguage." + index, details.GetSubtitleLanguage(i).c_str());
     }
   }

@@ -384,10 +384,11 @@ constexpr const char* CSettings::SETTING_INPUT_CONTROLLERPOWEROFF;
 constexpr const char* CSettings::SETTING_INPUT_APPLEREMOTEMODE;
 constexpr const char* CSettings::SETTING_INPUT_APPLEREMOTEALWAYSON;
 constexpr const char* CSettings::SETTING_INPUT_APPLEREMOTESEQUENCETIME;
-constexpr const char* CSettings::SETTING_INPUT_APPLESIRI;
-constexpr const char* CSettings::SETTING_INPUT_APPLESIRITIMEOUT;
-constexpr const char* CSettings::SETTING_INPUT_APPLESIRITIMEOUTENABLED;
-constexpr const char* CSettings::SETTING_INPUT_APPLEUSEKODIKEYBOARD;
+constexpr const char* CSettings::SETTING_INPUT_SIRIREMOTEIDLETIMERENABLED;
+constexpr const char* CSettings::SETTING_INPUT_SIRIREMOTEIDLETIME;
+constexpr const char* CSettings::SETTING_INPUT_SIRIREMOTEHORIZONTALSENSITIVITY;
+constexpr const char* CSettings::SETTING_INPUT_SIRIREMOTEVERTICALSENSITIVITY;
+constexpr const char* CSettings::SETTING_INPUT_TVOSUSEKODIKEYBOARD;
 constexpr const char* CSettings::SETTING_NETWORK_USEHTTPPROXY;
 constexpr const char* CSettings::SETTING_NETWORK_HTTPPROXYTYPE;
 constexpr const char* CSettings::SETTING_NETWORK_HTTPPROXYSERVER;
@@ -498,7 +499,8 @@ bool CSettings::Load(const std::string &file)
   if (!XFILE::CFile::Exists(file) || !xmlDoc.LoadFile(file) ||
       !Load(xmlDoc.RootElement(), updated))
   {
-    CLog::Log(LOGERROR, "CSettings: unable to load settings from %s, creating new default settings", file.c_str());
+    CLog::Log(LOGERROR, "CSettings: unable to load settings from {}, creating new default settings",
+              file);
     if (!Reset())
       return false;
 
@@ -608,11 +610,12 @@ bool CSettings::Initialize(const std::string &file)
   CXBMCTinyXML xmlDoc;
   if (!xmlDoc.LoadFile(file.c_str()))
   {
-    CLog::Log(LOGERROR, "CSettings: error loading settings definition from %s, Line %d\n%s", file.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    CLog::Log(LOGERROR, "CSettings: error loading settings definition from {}, Line {}\n{}", file,
+              xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
     return false;
   }
 
-  CLog::Log(LOGDEBUG, "CSettings: loaded settings definition from %s", file.c_str());
+  CLog::Log(LOGDEBUG, "CSettings: loaded settings definition from {}", file);
 
   return InitializeDefinitionsFromXml(xmlDoc);
 }
@@ -661,7 +664,8 @@ bool CSettings::InitializeDefinitions()
 
 #if defined(PLATFORM_SETTINGS_FILE)
   if (CFile::Exists(SETTINGS_XML_FOLDER DEF_TO_STR_VALUE(PLATFORM_SETTINGS_FILE)) && !Initialize(SETTINGS_XML_FOLDER DEF_TO_STR_VALUE(PLATFORM_SETTINGS_FILE)))
-    CLog::Log(LOGFATAL, "Unable to load platform-specific settings definitions (%s)", DEF_TO_STR_VALUE(PLATFORM_SETTINGS_FILE));
+    CLog::Log(LOGFATAL, "Unable to load platform-specific settings definitions ({})",
+              DEF_TO_STR_VALUE(PLATFORM_SETTINGS_FILE));
 #endif
 
   // load any custom visibility and default values before loading the special
@@ -1032,9 +1036,10 @@ void CSettings::InitializeISettingCallbacks()
 
 #if defined(TARGET_DARWIN_TVOS)
   settingSet.clear();
-  settingSet.insert(CSettings::SETTING_INPUT_APPLESIRI);
-  settingSet.insert(CSettings::SETTING_INPUT_APPLESIRITIMEOUT);
-  settingSet.insert(CSettings::SETTING_INPUT_APPLESIRITIMEOUTENABLED);
+  settingSet.insert(CSettings::SETTING_INPUT_SIRIREMOTEIDLETIMERENABLED);
+  settingSet.insert(CSettings::SETTING_INPUT_SIRIREMOTEIDLETIME);
+  settingSet.insert(CSettings::SETTING_INPUT_SIRIREMOTEHORIZONTALSENSITIVITY);
+  settingSet.insert(CSettings::SETTING_INPUT_SIRIREMOTEVERTICALSENSITIVITY);
   GetSettingsManager()->RegisterCallback(&CTVOSInputSettings::GetInstance(), settingSet);
 #endif
 
@@ -1085,7 +1090,7 @@ bool CSettings::Reset()
 
   // try to delete the settings file
   if (XFILE::CFile::Exists(settingsFile, false) && !XFILE::CFile::Delete(settingsFile))
-    CLog::Log(LOGWARNING, "Unable to delete old settings file at %s", settingsFile.c_str());
+    CLog::Log(LOGWARNING, "Unable to delete old settings file at {}", settingsFile);
 
   // unload any loaded settings
   Unload();
@@ -1093,7 +1098,7 @@ bool CSettings::Reset()
   // try to save the default settings
   if (!Save())
   {
-    CLog::Log(LOGWARNING, "Failed to save the default settings to %s", settingsFile.c_str());
+    CLog::Log(LOGWARNING, "Failed to save the default settings to {}", settingsFile);
     return false;
   }
 

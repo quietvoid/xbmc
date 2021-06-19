@@ -8,7 +8,9 @@ set(SOURCES AddonCallback.cpp
             Dialog.cpp
             DrmCryptoSession.cpp
             File.cpp
+            InfoTagGame.cpp
             InfoTagMusic.cpp
+            InfoTagPicture.cpp
             InfoTagRadioRDS.cpp
             InfoTagVideo.cpp
             Keyboard.cpp
@@ -21,6 +23,7 @@ set(SOURCES AddonCallback.cpp
             Monitor.cpp
             Player.cpp
             PlayList.cpp
+            Settings.cpp
             String.cpp
             Window.cpp
             WindowDialog.cpp
@@ -42,7 +45,9 @@ set(HEADERS Addon.h
             DrmCryptoSession.h
             Exception.h
             File.h
+            InfoTagGame.h
             InfoTagMusic.h
+            InfoTagPicture.h
             InfoTagRadioRDS.h
             InfoTagVideo.h
             Keyboard.h
@@ -57,6 +62,7 @@ set(HEADERS Addon.h
             Player.h
             PlayList.h
             RenderCapture.h
+            Settings.h
             Stat.h
             swighelper.h
             Tuple.h

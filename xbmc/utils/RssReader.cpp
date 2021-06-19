@@ -29,6 +29,7 @@
 #define RSS_COLOR_CHANNEL   2
 
 using namespace XFILE;
+using namespace std::chrono_literals;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -143,7 +144,7 @@ void CRssReader::Process()
       {
         if (timeout.IsTimePast())
         {
-          CLog::Log(LOGERROR, "Timeout while retrieving rss feed: %s", strUrl.c_str());
+          CLog::Log(LOGERROR, "Timeout while retrieving rss feed: {}", strUrl);
           break;
         }
         nRetries--;
@@ -163,13 +164,13 @@ void CRssReader::Process()
           if (http.Get(strUrl, strXML))
           {
             fileCharset = http.GetProperty(XFILE::FILE_PROPERTY_CONTENT_CHARSET);
-            CLog::Log(LOGDEBUG, "Got rss feed: %s", strUrl.c_str());
+            CLog::Log(LOGDEBUG, "Got rss feed: {}", strUrl);
             break;
           }
           else if (nRetries > 0)
-            CThread::Sleep(5000); // Network problems? Retry, but not immediately.
+            CThread::Sleep(5000ms); // Network problems? Retry, but not immediately.
           else
-            CLog::Log(LOGERROR, "Unable to obtain rss feed: %s", strUrl.c_str());
+            CLog::Log(LOGERROR, "Unable to obtain rss feed: {}", strUrl);
         }
       }
       http.Cancel();
@@ -191,7 +192,7 @@ void CRssReader::Process()
       }
 
       if (Parse(strXML, iFeed, fileCharset))
-        CLog::Log(LOGDEBUG, "Parsed rss feed: %s", strUrl.c_str());
+        CLog::Log(LOGDEBUG, "Parsed rss feed: {}", strUrl);
     }
   }
   UpdateObserver();
@@ -310,7 +311,7 @@ bool CRssReader::Parse(const std::string& data, int iFeed, const std::string& ch
   m_xml.Clear();
   m_xml.Parse(data, charset);
 
-  CLog::Log(LOGDEBUG, "RSS feed encoding: %s", m_xml.GetUsedCharset().c_str());
+  CLog::Log(LOGDEBUG, "RSS feed encoding: {}", m_xml.GetUsedCharset());
 
   return Parse(iFeed);
 }

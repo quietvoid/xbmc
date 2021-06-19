@@ -62,9 +62,21 @@ CPVRSettings::~CPVRSettings()
   settings->GetSettingsManager()->UnregisterSettingsHandler(this);
 }
 
+void CPVRSettings::RegisterCallback(ISettingCallback* callback)
+{
+  CSingleLock lock(m_critSection);
+  m_callbacks.insert(callback);
+}
+
+void CPVRSettings::UnregisterCallback(ISettingCallback* callback)
+{
+  CSingleLock lock(m_critSection);
+  m_callbacks.erase(callback);
+}
+
 void CPVRSettings::Init(const std::set<std::string>& settingNames)
 {
-  for (auto settingName : settingNames)
+  for (const auto& settingName : settingNames)
   {
     SettingPtr setting = CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(settingName);
     if (!setting)
@@ -100,6 +112,11 @@ void CPVRSettings::OnSettingChanged(const std::shared_ptr<const CSetting>& setti
 
   CSingleLock lock(m_critSection);
   m_settings[setting->GetId()] = setting->Clone(setting->GetId());
+  const auto callbacks(m_callbacks);
+  lock.Leave();
+
+  for (const auto& callback : callbacks)
+    callback->OnSettingChanged(setting);
 }
 
 bool CPVRSettings::GetBoolValue(const std::string& settingName) const
@@ -161,7 +178,8 @@ void CPVRSettings::MarginTimeFiller(const SettingConstPtr& /*setting*/,
 
   for (int iValue : marginTimeValues)
   {
-    list.emplace_back(StringUtils::Format(g_localizeStrings.Get(14044).c_str(), iValue) /* %i min */, iValue);
+    list.emplace_back(StringUtils::Format(g_localizeStrings.Get(14044), iValue) /* {} min */,
+                      iValue);
   }
 }
 

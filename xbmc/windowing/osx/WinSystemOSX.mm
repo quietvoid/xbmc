@@ -59,6 +59,7 @@
 using namespace KODI;
 using namespace MESSAGING;
 using namespace WINDOWING;
+using namespace std::chrono_literals;
 
 //------------------------------------------------------------------------------------------
 // special object-c class for handling the NSWindowDidMoveNotification callback.
@@ -171,7 +172,7 @@ NSOpenGLContext* CWinSystemOSXImpl::m_lastOwnedContext = nil;
 // but no device reset for 3 secs
 // a timeout fires the reset callback
 // (for ensuring that e.x. AE isn't stuck)
-#define LOST_DEVICE_TIMEOUT_MS 3000
+constexpr auto LOST_DEVICE_TIMEOUT_MS = 3000ms;
 static NSWindow* blankingWindows[MAX_DISPLAYS];
 
 //------------------------------------------------------------------------------------------
@@ -544,8 +545,8 @@ CGDisplayModeRef GetMode(int width, int height, double refreshrate, int screenId
   double rate;
   RESOLUTION_INFO res;
 
-  CLog::Log(LOGDEBUG, "GetMode looking for suitable mode with %d x %d @ %f Hz on display %d", width,
-            height, refreshrate, screenIdx);
+  CLog::Log(LOGDEBUG, "GetMode looking for suitable mode with {} x {} @ {:f} Hz on display {}",
+            width, height, refreshrate, screenIdx);
 
   CFArrayRef displayModes = GetAllDisplayModes(GetDisplayID(screenIdx));
 
@@ -592,7 +593,7 @@ static void DisplayReconfigured(CGDirectDisplayID display,
   if (!winsys)
     return;
 
-  CLog::Log(LOGDEBUG, "CWinSystemOSX::DisplayReconfigured with flags %d", flags);
+  CLog::Log(LOGDEBUG, "CWinSystemOSX::DisplayReconfigured with flags {}", flags);
 
   // we fire the callbacks on start of configuration
   // or when the mode set was finished
@@ -659,7 +660,7 @@ CWinSystemOSX::CWinSystemOSX()
   m_SDLSurface = NULL;
   m_osx_events = NULL;
   m_obscured   = false;
-  m_obscured_timecheck = XbmcThreads::SystemClockMillis() + 1000;
+  m_obscured_timecheck = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
   m_lastDisplayNr = -1;
   m_movedToOtherScreen = false;
   m_refreshRate = 0.0;
@@ -701,7 +702,7 @@ bool CWinSystemOSX::InitWindowSystem()
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0)
   {
-    CLog::LogF(LOGFATAL, "Unable to initialize SDL: %s", SDL_GetError());
+    CLog::LogF(LOGFATAL, "Unable to initialize SDL: {}", SDL_GetError());
     return false;
   }
   // SDL_Init will install a handler for segfaults, restore the default handler.
@@ -954,7 +955,7 @@ bool CWinSystemOSX::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool bl
   if (m_bFullScreen)
   {
     // switch videomode
-    SwitchToVideoMode(res.iWidth, res.iHeight, res.fRefreshRate);
+    SwitchToVideoMode(res.iWidth, res.iHeight, static_cast<double>(res.fRefreshRate));
   }
 
   //no context? done.
@@ -1366,7 +1367,7 @@ void CWinSystemOSX::FillInVideoModes()
     CFArrayRef displayModes = GetAllDisplayModes(GetDisplayID(disp));
     NSString *dispName = screenNameForDisplay(GetDisplayID(disp));
 
-    CLog::Log(LOGINFO, "Display %i has name %s", disp, [dispName UTF8String]);
+    CLog::Log(LOGINFO, "Display {} has name {}", disp, [dispName UTF8String]);
 
     if (NULL == displayModes)
       continue;
@@ -1395,8 +1396,8 @@ void CWinSystemOSX::FillInVideoModes()
           // NOTE: The refresh rate will be REPORTED AS 0 for many DVI and notebook displays.
           refreshrate = 60.0;
         }
-        CLog::Log(LOGINFO, "Found possible resolution for display %d with %d x %d @ %f Hz", disp, w,
-                  h, refreshrate);
+        CLog::Log(LOGINFO, "Found possible resolution for display {} with {} x {} @ {:f} Hz", disp,
+                  w, h, refreshrate);
 
         // only add the resolution if it belongs to "our" screen
         // all others are only logged above...
@@ -1428,11 +1429,11 @@ bool CWinSystemOSX::FlushBuffer(void)
 bool CWinSystemOSX::IsObscured(void)
 {
   // check once a second if we are obscured.
-  unsigned int now_time = XbmcThreads::SystemClockMillis();
+  auto now_time = std::chrono::steady_clock::now();
   if (m_obscured_timecheck > now_time)
     return m_obscured;
   else
-    m_obscured_timecheck = now_time + 1000;
+    m_obscured_timecheck = now_time + std::chrono::milliseconds(1000);
 
   NSOpenGLContext* cur_context = [NSOpenGLContext currentContext];
   NSView* view = [cur_context view];
@@ -1540,8 +1541,7 @@ bool CWinSystemOSX::IsObscured(void)
         {
           std::string appName;
           if (CDarwinUtils::CFStringRefToUTF8String(ownerName, appName))
-            CLog::Log(LOGDEBUG, "WinSystemOSX: Fullscreen window %s obscures Kodi!",
-                      appName.c_str());
+            CLog::Log(LOGDEBUG, "WinSystemOSX: Fullscreen window {} obscures Kodi!", appName);
           obscureLogged = true;
         }
         m_obscured = true;

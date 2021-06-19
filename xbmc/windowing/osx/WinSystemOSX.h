@@ -9,9 +9,11 @@
 #pragma once
 
 #include "threads/CriticalSection.h"
+#include "threads/SystemClock.h"
 #include "threads/Timer.h"
 #include "windowing/WinSystem.h"
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -93,7 +95,7 @@ protected:
   SDL_Surface* m_SDLSurface;
   CWinEventsOSX *m_osx_events;
   bool                         m_obscured;
-  unsigned int                 m_obscured_timecheck;
+  std::chrono::time_point<std::chrono::steady_clock> m_obscured_timecheck;
 
   bool                         m_movedToOtherScreen;
   int                          m_lastDisplayNr;

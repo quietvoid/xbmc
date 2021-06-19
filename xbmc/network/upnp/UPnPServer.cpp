@@ -181,8 +181,8 @@ CUPnPServer::PropagateUpdates()
     // only broadcast ids with modified bit set
     for (itr = m_UpdateIDs.begin(); itr != m_UpdateIDs.end(); ++itr) {
         if (itr->second.first) {
-            buffer.append(StringUtils::Format("%s,%ld,", itr->first.c_str(), itr->second.second).c_str());
-            itr->second.first = false;
+          buffer.append(StringUtils::Format("{},{},", itr->first, itr->second.second));
+          itr->second.first = false;
         }
     }
 
@@ -474,8 +474,9 @@ void CUPnPServer::Announce(AnnouncementFlag flag,
                 if (!db.Open()) return;
                 int show_id = db.GetTvShowForEpisode(item_id);
                 int season_id = db.GetSeasonForEpisode(item_id);
-                UpdateContainer(StringUtils::Format("videodb://tvshows/titles/%d/", show_id));
-                UpdateContainer(StringUtils::Format("videodb://tvshows/titles/%d/%d/?tvshowid=%d", show_id, season_id, show_id));
+                UpdateContainer(StringUtils::Format("videodb://tvshows/titles/{}/", show_id));
+                UpdateContainer(StringUtils::Format("videodb://tvshows/titles/{}/{}/?tvshowid={}",
+                                                    show_id, season_id, show_id));
                 UpdateContainer("videodb://recentlyaddedepisodes/");
             }
             else if(item_type == MediaTypeTvShow) {
@@ -498,9 +499,9 @@ void CUPnPServer::Announce(AnnouncementFlag flag,
             CAlbum album;
             if (!db.Open()) return;
             if (db.GetAlbumFromSong(item_id, album)) {
-                UpdateContainer(StringUtils::Format("musicdb://albums/%ld", album.idAlbum));
-                UpdateContainer("musicdb://songs/");
-                UpdateContainer("musicdb://recentlyaddedalbums/");
+              UpdateContainer(StringUtils::Format("musicdb://albums/{}", album.idAlbum));
+              UpdateContainer("musicdb://songs/");
+              UpdateContainer("musicdb://recentlyaddedalbums/");
             }
         }
     }
@@ -679,7 +680,7 @@ CUPnPServer::OnBrowseDirectChildren(PLT_ActionReference&          action,
 
     if (!load) {
         // cache anything that takes more than a second to retrieve
-        unsigned int time = XbmcThreads::SystemClockMillis();
+        auto start = std::chrono::steady_clock::now();
 
         if (parent_id.StartsWith("virtualpath://upnproot")) {
             CFileItemPtr item;
@@ -709,9 +710,13 @@ CUPnPServer::OnBrowseDirectChildren(PLT_ActionReference&          action,
             DefaultSortItems(items);
         }
 
-        if (items.CacheToDiscAlways() || (items.CacheToDiscIfSlow() && (XbmcThreads::SystemClockMillis() - time) > 1000 )) {
-            NPT_AutoLock lock(m_CacheMutex);
-            items.Save();
+        auto end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        if (items.CacheToDiscAlways() || (items.CacheToDiscIfSlow() && duration.count() > 1000))
+        {
+          NPT_AutoLock lock(m_CacheMutex);
+          items.Save();
         }
     }
 
@@ -920,23 +925,23 @@ CUPnPServer::OnSearchContainer(PLT_ActionReference&          action,
 
         if (genre.GetLength() > 0) {
             // all tracks by genre filtered by artist and/or album
-            std::string strPath = StringUtils::Format("musicdb://genres/%i/%i/%i/",
-                                          database.GetGenreByName((const char*)genre),
-                                          database.GetArtistByName((const char*)artist), // will return -1 if no artist
-                                          database.GetAlbumByName((const char*)album));  // will return -1 if no album
+            std::string strPath = StringUtils::Format(
+                "musicdb://genres/{}/{}/{}/", database.GetGenreByName((const char*)genre),
+                database.GetArtistByName((const char*)artist), // will return -1 if no artist
+                database.GetAlbumByName((const char*)album)); // will return -1 if no album
 
             return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
         } else if (artist.GetLength() > 0) {
             // all tracks by artist name filtered by album if passed
-            std::string strPath = StringUtils::Format("musicdb://artists/%i/%i/",
-                                          database.GetArtistByName((const char*)artist),
-                                          database.GetAlbumByName((const char*)album)); // will return -1 if no album
+            std::string strPath = StringUtils::Format(
+                "musicdb://artists/{}/{}/", database.GetArtistByName((const char*)artist),
+                database.GetAlbumByName((const char*)album)); // will return -1 if no album
 
             return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
         } else if (album.GetLength() > 0) {
             // all tracks by album name
-            std::string strPath = StringUtils::Format("musicdb://albums/%i/",
-                                                     database.GetAlbumByName((const char*)album));
+            std::string strPath = StringUtils::Format("musicdb://albums/{}/",
+                                                      database.GetAlbumByName((const char*)album));
 
             return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
         }
@@ -958,14 +963,16 @@ CUPnPServer::OnSearchContainer(PLT_ActionReference&          action,
         database.Open();
 
         if (genre.GetLength() > 0) {
-            std::string strPath = StringUtils::Format("musicdb://genres/%i/%i/",
-                                                     database.GetGenreByName((const char*)genre),
-                                                     database.GetArtistByName((const char*)artist)); // no artist should return -1
-            return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
+          std::string strPath = StringUtils::Format(
+              "musicdb://genres/{}/{}/", database.GetGenreByName((const char*)genre),
+              database.GetArtistByName((const char*)artist)); // no artist should return -1
+          return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index,
+                                        requested_count, sort_criteria, context);
         } else if (artist.GetLength() > 0) {
-            std::string strPath = StringUtils::Format("musicdb://artists/%i/",
-                                                     database.GetArtistByName((const char*)artist));
-            return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
+          std::string strPath = StringUtils::Format("musicdb://artists/{}/",
+                                                    database.GetArtistByName((const char*)artist));
+          return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index,
+                                        requested_count, sort_criteria, context);
         }
 
         // all albums
@@ -976,7 +983,8 @@ CUPnPServer::OnSearchContainer(PLT_ActionReference&          action,
         if (genre.GetLength() > 0) {
             CMusicDatabase database;
             database.Open();
-            std::string strPath = StringUtils::Format("musicdb://genres/%i/", database.GetGenreByName((const char*)genre));
+            std::string strPath = StringUtils::Format("musicdb://genres/{}/",
+                                                      database.GetGenreByName((const char*)genre));
             return OnBrowseDirectChildren(action, strPath.c_str(), filter, starting_index, requested_count, sort_criteria, context);
         }
         return OnBrowseDirectChildren(action, "musicdb://artists/", filter, starting_index, requested_count, sort_criteria, context);

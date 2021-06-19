@@ -16,6 +16,8 @@
 #include <functional>
 #include <stdexcept>
 
+using namespace std::chrono_literals;
+
 bool CJob::ShouldCancel(unsigned int progress, unsigned int total) const
 {
   if (m_callback)
@@ -56,7 +58,7 @@ void CJobWorker::Process()
     }
     catch (...)
     {
-      CLog::Log(LOGERROR, "%s error processing job %s", __FUNCTION__, job->GetType());
+      CLog::Log(LOGERROR, "{} error processing job {}", __FUNCTION__, job->GetType());
     }
     m_jobManager->OnJobComplete(success, job);
   }
@@ -80,13 +82,12 @@ CJobQueue::~CJobQueue()
 
 void CJobQueue::OnJobComplete(unsigned int jobID, bool success, CJob *job)
 {
-  CSingleLock lock(m_section);
-  // check if this job is in our processing list
-  Processing::iterator i = find(m_processing.begin(), m_processing.end(), job);
-  if (i != m_processing.end())
-    m_processing.erase(i);
-  // request a new job be queued
-  QueueNextJob();
+  OnJobNotify(job);
+}
+
+void CJobQueue::OnJobAbort(unsigned int jobID, CJob* job)
+{
+  OnJobNotify(job);
 }
 
 void CJobQueue::CancelJob(const CJob *job)
@@ -127,14 +128,31 @@ bool CJobQueue::AddJob(CJob *job)
   return true;
 }
 
+void CJobQueue::OnJobNotify(CJob* job)
+{
+  CSingleLock lock(m_section);
+
+  // check if this job is in our processing list
+  const auto it = std::find(m_processing.begin(), m_processing.end(), job);
+  if (it != m_processing.end())
+    m_processing.erase(it);
+  // request a new job be queued
+  QueueNextJob();
+}
+
 void CJobQueue::QueueNextJob()
 {
   CSingleLock lock(m_section);
-  if (m_jobQueue.size() && m_processing.size() < m_jobsAtOnce)
+  while (m_jobQueue.size() && m_processing.size() < m_jobsAtOnce)
   {
     CJobPointer &job = m_jobQueue.back();
     job.m_id = CJobManager::GetInstance().AddJob(job.m_job, this, m_priority);
-    m_processing.push_back(job);
+    if (job.m_id > 0)
+    {
+      m_processing.emplace_back(job);
+      m_jobQueue.pop_back();
+      return;
+    }
     m_jobQueue.pop_back();
   }
 }
@@ -189,12 +207,20 @@ void CJobManager::CancelJobs()
   // clear any pending jobs
   for (unsigned int priority = CJob::PRIORITY_LOW_PAUSABLE; priority <= CJob::PRIORITY_DEDICATED; ++priority)
   {
-    for_each(m_jobQueue[priority].begin(), m_jobQueue[priority].end(), [](CWorkItem& wi) { wi.FreeJob(); });
+    std::for_each(m_jobQueue[priority].begin(), m_jobQueue[priority].end(), [](CWorkItem& wi) {
+      if (wi.m_callback)
+        wi.m_callback->OnJobAbort(wi.m_id, wi.m_job);
+      wi.FreeJob();
+    });
     m_jobQueue[priority].clear();
   }
 
   // cancel any callbacks on jobs still processing
-  for_each(m_processing.begin(), m_processing.end(), [](CWorkItem& wi) { wi.Cancel(); });
+  std::for_each(m_processing.begin(), m_processing.end(), [](CWorkItem& wi) {
+    if (wi.m_callback)
+      wi.m_callback->OnJobAbort(wi.m_id, wi.m_job);
+    wi.Cancel();
+  });
 
   // tell our workers to finish
   while (m_workers.size())
@@ -211,7 +237,10 @@ unsigned int CJobManager::AddJob(CJob *job, IJobCallback *callback, CJob::PRIORI
   CSingleLock lock(m_section);
 
   if (!m_running)
+  {
+    delete job;
     return 0;
+  }
 
   // increment the job counter, ensuring 0 (invalid job) is never hit
   m_jobCounter++;
@@ -344,7 +373,7 @@ CJob *CJobManager::GetNextJob(const CJobWorker *worker)
       return job;
     // no jobs are left - sleep for 30 seconds to allow new jobs to come in
     lock.Leave();
-    bool newJob = m_jobEvent.WaitMSec(30000);
+    bool newJob = m_jobEvent.Wait(30000ms);
     lock.Enter();
     if (!newJob)
       break;
@@ -394,7 +423,7 @@ void CJobManager::OnJobComplete(bool success, CJob *job)
     }
     catch (...)
     {
-      CLog::Log(LOGERROR, "%s error processing job %s", __FUNCTION__, item.m_job->GetType());
+      CLog::Log(LOGERROR, "{} error processing job {}", __FUNCTION__, item.m_job->GetType());
     }
     lock.Enter();
     Processing::iterator j = find(m_processing.begin(), m_processing.end(), job);

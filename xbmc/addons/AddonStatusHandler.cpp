@@ -47,7 +47,9 @@ CAddonStatusHandler::CAddonStatusHandler(const std::string &addonID, ADDON_STATU
   if (!CServiceBroker::GetAddonMgr().GetAddon(addonID, m_addon, ADDON_UNKNOWN, OnlyEnabled::YES))
     return;
 
-  CLog::Log(LOGINFO, "Called Add-on status handler for '%u' of clientName:%s, clientID:%s (same Thread=%s)", status, m_addon->Name().c_str(), m_addon->ID().c_str(), sameThread ? "yes" : "no");
+  CLog::Log(LOGINFO,
+            "Called Add-on status handler for '{}' of clientName:{}, clientID:{} (same Thread={})",
+            status, m_addon->Name(), m_addon->ID(), sameThread ? "yes" : "no");
 
   m_status  = status;
   m_message = std::move(message);
@@ -80,7 +82,8 @@ void CAddonStatusHandler::Process()
 {
   CSingleLock lock(m_critSection);
 
-  std::string heading = StringUtils::Format("%s: %s", CAddonInfo::TranslateType(m_addon->Type(), true).c_str(), m_addon->Name().c_str());
+  std::string heading = StringUtils::Format(
+      "{}: {}", CAddonInfo::TranslateType(m_addon->Type(), true), m_addon->Name());
 
   /* Request to restart the AddOn and data structures need updated */
   if (m_status == ADDON_STATUS_NEED_RESTART)

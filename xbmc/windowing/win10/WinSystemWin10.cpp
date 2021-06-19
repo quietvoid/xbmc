@@ -80,7 +80,7 @@ bool CWinSystemWin10::InitWindowSystem()
 
   if (m_displays.empty())
   {
-    CLog::Log(LOGERROR, "%s - no suitable monitor found, aborting...", __FUNCTION__);
+    CLog::Log(LOGERROR, "{} - no suitable monitor found, aborting...", __FUNCTION__);
     return false;
   }
 
@@ -199,8 +199,9 @@ bool CWinSystemWin10::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool 
   CWinSystemWin10::UpdateStates(fullScreen);
   WINDOW_STATE state = GetState(fullScreen);
 
-  CLog::Log(LOGDEBUG, "%s (%s) with size %dx%d, refresh %f%s", __FUNCTION__, window_state_names[state]
-          , res.iWidth, res.iHeight, res.fRefreshRate, (res.dwFlags & D3DPRESENTFLAG_INTERLACED) ? "i" : "");
+  CLog::Log(LOGDEBUG, "{} ({}) with size {}x{}, refresh {:f}{}", __FUNCTION__,
+            window_state_names[state], res.iWidth, res.iHeight, res.fRefreshRate,
+            (res.dwFlags & D3DPRESENTFLAG_INTERLACED) ? "i" : "");
 
   bool forceChange = false;    // resolution/display is changed but window state isn't changed
   bool stereoChange = IsStereoEnabled() != (CServiceBroker::GetWinSystem()->GetGfxContext().GetStereoMode() == RENDER_STEREO_MODE_HARDWAREBASED);
@@ -382,7 +383,7 @@ void CWinSystemWin10::UpdateResolutions()
 
   RESOLUTION_INFO& primary_info = CDisplaySettings::GetInstance().GetResolutionInfo(RES_DESKTOP);
   UpdateDesktopResolution(primary_info, "Default", w, h, refreshRate, dwFlags);
-  CLog::Log(LOGINFO, "Primary mode: %s", primary_info.strMode.c_str());
+  CLog::Log(LOGINFO, "Primary mode: {}", primary_info.strMode);
 
   // erase previous stored modes
   CDisplaySettings::GetInstance().ClearCustomResolutions();
@@ -405,12 +406,12 @@ void CWinSystemWin10::UpdateResolutions()
         res.iScreenWidth = res.iWidth;
         res.iScreenHeight = res.iHeight;
         res.iSubtitles = (int)(0.965 * res.iHeight);
-        res.strMode = StringUtils::Format("Default: %dx%d @ %.2fHz",
-                                          res.iWidth, res.iHeight, res.fRefreshRate);
+        res.strMode = StringUtils::Format("Default: {}x{} @ {:.2f}Hz", res.iWidth, res.iHeight,
+                                          res.fRefreshRate);
         GetGfxContext().ResetOverscan(res);
 
         if (AddResolution(res))
-          CLog::Log(LOGINFO, "Additional mode: %s %s", res.strMode.c_str(),
+          CLog::Log(LOGINFO, "Additional mode: {} {}", res.strMode,
                     mode.Is2086MetadataSupported() ? "(HDR)" : "");
       }
     }
@@ -476,6 +477,10 @@ void CWinSystemWin10::GetConnectedDisplays(std::vector<MONITOR_DETAILS>& outputs
       if (hdmiInfo != nullptr)
       {
         auto currentMode = hdmiInfo.GetCurrentDisplayMode();
+        // On Xbox, 4K resolutions only are reported by HdmiDisplayInformation API
+        // so ScreenHeight & ScreenWidth are updated with info provided here
+        md.ScreenHeight = currentMode.ResolutionHeightInRawPixels();
+        md.ScreenWidth = currentMode.ResolutionWidthInRawPixels();
         md.RefreshRate = currentMode.RefreshRate();
         md.Bpp = currentMode.BitsPerPixel();
       }
@@ -523,22 +528,22 @@ void CWinSystemWin10::ShowOSMouse(bool show)
 
 bool CWinSystemWin10::Minimize()
 {
-  CLog::Log(LOGDEBUG, "%s is not implemented", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} is not implemented", __FUNCTION__);
   return true;
 }
 bool CWinSystemWin10::Restore()
 {
-  CLog::Log(LOGDEBUG, "%s is not implemented", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} is not implemented", __FUNCTION__);
   return true;
 }
 bool CWinSystemWin10::Hide()
 {
-  CLog::Log(LOGDEBUG, "%s is not implemented", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} is not implemented", __FUNCTION__);
   return true;
 }
 bool CWinSystemWin10::Show(bool raise)
 {
-  CLog::Log(LOGDEBUG, "%s is not implemented", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} is not implemented", __FUNCTION__);
   return true;
 }
 
@@ -558,7 +563,7 @@ void CWinSystemWin10::Unregister(IDispResource* resource)
 
 void CWinSystemWin10::OnDisplayLost()
 {
-  CLog::Log(LOGDEBUG, "%s - notify display lost event", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} - notify display lost event", __FUNCTION__);
 
   {
     CSingleLock lock(m_resourceSection);
@@ -571,7 +576,7 @@ void CWinSystemWin10::OnDisplayReset()
 {
   if (!m_delayDispReset)
   {
-    CLog::Log(LOGDEBUG, "%s - notify display reset event", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "{} - notify display reset event", __FUNCTION__);
     CSingleLock lock(m_resourceSection);
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)
       (*i)->OnResetDisplay();

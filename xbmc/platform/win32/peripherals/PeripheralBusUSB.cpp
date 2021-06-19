@@ -20,6 +20,7 @@ const static GUID USB_DISK_GUID = { 0x53F56307, 0xB6BF, 0x11D0, { 0x94, 0xF2, 0x
 const static GUID USB_NIC_GUID = { 0xAD498944, 0x762F, 0x11D0, { 0x8D, 0xCB, 0x00, 0xC0, 0x4F, 0xC3, 0x35, 0x8C } };
 
 using namespace PERIPHERALS;
+using namespace std::chrono_literals;
 
 // Only to avoid endless loops while scanning for devices
 #define MAX_BUS_DEVICES 2000
@@ -28,7 +29,7 @@ CPeripheralBusUSB::CPeripheralBusUSB(CPeripherals& manager) :
     CPeripheralBus("PeripBusUSB", manager, PERIPHERAL_BUS_USB)
 {
   /* device removals aren't always triggering OnDeviceRemoved events, so poll for changes every 5 seconds to be sure we don't miss anything */
-  m_iRescanTime = 5000;
+  m_iRescanTime = 5000ms;
 }
 
 bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
@@ -56,7 +57,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(const GUID *guid, const PeripheralType
   HDEVINFO const hDevHandle = SetupDiGetClassDevs(guid, 0, 0, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
   if (hDevHandle == INVALID_HANDLE_VALUE)
   {
-    CLog::Log(LOGWARNING, "%s - cannot query USB devices: invalid handle", __FUNCTION__);
+    CLog::Log(LOGWARNING, "{} - cannot query USB devices: invalid handle", __FUNCTION__);
     return bReturn;
   }
 
@@ -67,7 +68,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(const GUID *guid, const PeripheralType
   {
     free(devicedetailData);
     free(deviceProperty);
-    CLog::Log(LOGFATAL, "%s: memory allocation failed", __FUNCTION__);
+    CLog::Log(LOGFATAL, "{}: memory allocation failed", __FUNCTION__);
     return false;
   }
 
@@ -101,7 +102,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(const GUID *guid, const PeripheralType
         if (!devicedetailData)
         {
           free(deviceProperty);
-          CLog::Log(LOGFATAL, "%s: memory allocation failed", __FUNCTION__);
+          CLog::Log(LOGFATAL, "{}: memory allocation failed", __FUNCTION__);
           return false;
         }
         devicedetailData->cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);
@@ -119,7 +120,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(const GUID *guid, const PeripheralType
           if (!deviceProperty)
           {
             free(devicedetailData);
-            CLog::Log(LOGFATAL, "%s: memory allocation failed", __FUNCTION__);
+            CLog::Log(LOGFATAL, "{}: memory allocation failed", __FUNCTION__);
             return false;
           }
           nPropertyBufferSize = required;

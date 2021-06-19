@@ -31,13 +31,14 @@
 #ifdef TARGET_WINDOWS
 #include "powermanagement/WinIdleTimer.h"
 #endif
+#include "ApplicationPlayer.h"
+#include "threads/SystemClock.h"
+#include "threads/Thread.h"
 #include "utils/Stopwatch.h"
 #include "windowing/OSScreenSaver.h"
 #include "windowing/XBMC_events.h"
-#include "threads/SystemClock.h"
-#include "threads/Thread.h"
 
-#include "ApplicationPlayer.h"
+#include <chrono>
 
 class CAction;
 class CFileItem;
@@ -122,17 +123,6 @@ public:
   // of currently playing item, otherwise it will seek to start of the previous item in playlist
   static const unsigned int ACTION_PREV_ITEM_THRESHOLD = 3; // seconds;
 
-  enum ESERVERS
-  {
-    ES_WEBSERVER = 1,
-    ES_AIRPLAYSERVER,
-    ES_JSONRPCSERVER,
-    ES_UPNPRENDERER,
-    ES_UPNPSERVER,
-    ES_EVENTSERVER,
-    ES_ZEROCONF
-  };
-
   CApplication(void);
   ~CApplication(void) override;
   bool Initialize() override;
@@ -146,8 +136,6 @@ public:
 
   bool CreateGUI();
   bool InitWindow(RESOLUTION res = RES_INVALID);
-
-  bool StartServer(enum ESERVERS eServer, bool bStart, bool bWait = false);
 
   bool IsCurrentThread() const;
   void Stop(int exitCode);
@@ -398,7 +386,7 @@ protected:
 
   int m_nextPlaylistItem = -1;
 
-  unsigned int m_lastRenderTime = 0;
+  std::chrono::time_point<std::chrono::steady_clock> m_lastRenderTime;
   bool m_skipGuiRender = false;
 
   std::string m_logTarget;
@@ -436,6 +424,7 @@ protected:
 
 private:
   void PrintStartupLog();
+  void ResetCurrentItem();
 
   mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
 

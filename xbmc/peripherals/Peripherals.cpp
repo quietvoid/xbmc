@@ -20,8 +20,8 @@
 #include <utility>
 #if defined(TARGET_ANDROID)
 #include "platform/android/peripherals/PeripheralBusAndroid.h"
-#elif defined(TARGET_DARWIN_EMBEDDED)
-#include "platform/darwin/ios-common/peripherals/PeripheralBusDarwinEmbedded.h"
+#elif defined(TARGET_DARWIN)
+#include "platform/darwin/peripherals/PeripheralBusGCController.h"
 #endif
 #include "FileItem.h"
 #include "GUIUserMessages.h"
@@ -100,7 +100,6 @@ void CPeripherals::Initialise()
 {
   Clear();
 
-#if !defined(TARGET_DARWIN_TVOS)
   CDirectory::Create("special://profile/peripheral_data");
 
   /* load mappings from peripherals.xml */
@@ -117,8 +116,8 @@ void CPeripherals::Initialise()
   busses.push_back(std::make_shared<CPeripheralBusAddon>(*this));
 #if defined(TARGET_ANDROID)
   busses.push_back(std::make_shared<CPeripheralBusAndroid>(*this));
-#elif defined(TARGET_DARWIN_EMBEDDED)
-  busses.push_back(std::make_shared<CPeripheralBusDarwinEmbedded>(*this));
+#elif defined(TARGET_DARWIN)
+  busses.push_back(std::make_shared<CPeripheralBusGCController>(*this));
 #endif
   busses.push_back(std::make_shared<CPeripheralBusApplication>(*this));
 
@@ -135,7 +134,6 @@ void CPeripherals::Initialise()
 
   MESSAGING::CApplicationMessenger::GetInstance().RegisterReceiver(this);
   CServiceBroker::GetAnnouncementManager()->AddAnnouncer(this);
-#endif
 }
 
 void CPeripherals::Clear()
@@ -344,7 +342,7 @@ void CPeripherals::CreatePeripheral(CPeripheralBus& bus, const PeripheralScanRes
         m_bMissingLibCecWarningDisplayed = true;
         CLog::Log(
             LOGWARNING,
-            "%s - libCEC support has not been compiled in, so the CEC adapter cannot be used.",
+            "{} - libCEC support has not been compiled in, so the CEC adapter cannot be used.",
             __FUNCTION__);
         CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Warning,
                                               g_localizeStrings.Get(36000),
@@ -381,8 +379,8 @@ void CPeripherals::CreatePeripheral(CPeripheralBus& bus, const PeripheralScanRes
       bus.Register(peripheral);
     else
     {
-      CLog::Log(LOGDEBUG, "%s - failed to initialise peripheral on '%s'", __FUNCTION__,
-                mappedResult.m_strLocation.c_str());
+      CLog::Log(LOGDEBUG, "{} - failed to initialise peripheral on '{}'", __FUNCTION__,
+                mappedResult.m_strLocation);
     }
   }
 }
@@ -455,8 +453,8 @@ bool CPeripherals::GetMappingForDevice(const CPeripheralBus& bus,
       std::string strVendorId, strProductId;
       PeripheralTypeTranslator::FormatHexString(result.m_iVendorId, strVendorId);
       PeripheralTypeTranslator::FormatHexString(result.m_iProductId, strProductId);
-      CLog::Log(LOGDEBUG, "%s - device (%s:%s) mapped to %s (type = %s)", __FUNCTION__,
-                strVendorId.c_str(), strProductId.c_str(), mapping.m_strDeviceName.c_str(),
+      CLog::Log(LOGDEBUG, "{} - device ({}:{}) mapped to {} (type = {})", __FUNCTION__, strVendorId,
+                strProductId, mapping.m_strDeviceName,
                 PeripheralTypeTranslator::TypeToString(mapping.m_mappedTo));
       result.m_mappedType = mapping.m_mappedTo;
       if (!mapping.m_strDeviceName.empty())
@@ -507,14 +505,14 @@ bool CPeripherals::LoadMappings()
   CXBMCTinyXML xmlDoc;
   if (!xmlDoc.LoadFile("special://xbmc/system/peripherals.xml"))
   {
-    CLog::Log(LOGWARNING, "%s - peripherals.xml does not exist", __FUNCTION__);
+    CLog::Log(LOGWARNING, "{} - peripherals.xml does not exist", __FUNCTION__);
     return true;
   }
 
   TiXmlElement* pRootElement = xmlDoc.RootElement();
   if (!pRootElement || StringUtils::CompareNoCase(pRootElement->Value(), "peripherals") != 0)
   {
-    CLog::Log(LOGERROR, "%s - peripherals.xml does not contain <peripherals>", __FUNCTION__);
+    CLog::Log(LOGERROR, "{} - peripherals.xml does not contain <peripherals>", __FUNCTION__);
     return false;
   }
 
@@ -537,8 +535,8 @@ bool CPeripherals::LoadMappings()
         std::vector<std::string> idArray = StringUtils::Split(i, ":");
         if (idArray.size() != 2)
         {
-          CLog::Log(LOGERROR, "%s - ignoring node \"%s\" with invalid vendor_product attribute",
-                    __FUNCTION__, mapping.m_strDeviceName.c_str());
+          CLog::Log(LOGERROR, "{} - ignoring node \"{}\" with invalid vendor_product attribute",
+                    __FUNCTION__, mapping.m_strDeviceName);
           continue;
         }
 
@@ -557,7 +555,7 @@ bool CPeripherals::LoadMappings()
     GetSettingsFromMappingsFile(currentNode, mapping.m_settings);
 
     m_mappings.push_back(mapping);
-    CLog::Log(LOGDEBUG, "%s - loaded node \"%s\"", __FUNCTION__, mapping.m_strDeviceName.c_str());
+    CLog::Log(LOGDEBUG, "{} - loaded node \"{}\"", __FUNCTION__, mapping.m_strDeviceName);
   }
 
   return true;
@@ -837,20 +835,17 @@ void CPeripherals::TestFeature(PeripheralFeature feature)
   {
     if (peripheral->TestFeature(feature))
     {
-      CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"%s\" tested %s feature",
-                peripheral->DeviceName().c_str(),
+      CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"{}\" tested {} feature", peripheral->DeviceName(),
                 PeripheralTypeTranslator::FeatureToString(feature));
     }
     else
     {
       if (peripheral->HasFeature(feature))
-        CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"%s\" failed to test %s feature",
-                  peripheral->DeviceName().c_str(),
-                  PeripheralTypeTranslator::FeatureToString(feature));
+        CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"{}\" failed to test {} feature",
+                  peripheral->DeviceName(), PeripheralTypeTranslator::FeatureToString(feature));
       else
-        CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"%s\" doesn't support %s feature",
-                  peripheral->DeviceName().c_str(),
-                  PeripheralTypeTranslator::FeatureToString(feature));
+        CLog::Log(LOGDEBUG, "PERIPHERALS: Device \"{}\" doesn't support {} feature",
+                  peripheral->DeviceName(), PeripheralTypeTranslator::FeatureToString(feature));
     }
   }
 }

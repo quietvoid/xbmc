@@ -91,8 +91,9 @@ int CSeekHandler::GetSeekStepSize(SeekType type, int step)
 
   if (seekSteps.empty())
   {
-    CLog::Log(LOGERROR, "SeekHandler - %s - No %s %s seek steps configured.", __FUNCTION__,
-              (type == SeekType::SEEK_TYPE_VIDEO ? "video" : "music"), (step > 0 ? "forward" : "backward"));
+    CLog::Log(LOGERROR, "SeekHandler - {} - No {} {} seek steps configured.", __FUNCTION__,
+              (type == SeekType::SEEK_TYPE_VIDEO ? "video" : "music"),
+              (step > 0 ? "forward" : "backward"));
     return 0;
   }
 
@@ -140,7 +141,7 @@ void CSeekHandler::Seek(bool forward, float amount, float duration /* = 0 */, bo
     if (totalTime < 0)
       totalTime = 0;
 
-    double seekSize = (amount * amount * speed) * totalTime / 100;
+    double seekSize = static_cast<double>(amount * amount * speed) * totalTime / 100.0;
     if (forward)
       SetSeekSize(m_seekSize + seekSize);
     else
@@ -236,9 +237,9 @@ void CSeekHandler::SettingOptionsSeekStepsFiller(const SettingConstPtr& setting,
   for (int seconds : CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_seekSteps)
   {
     if (seconds > 60)
-      label = StringUtils::Format(g_localizeStrings.Get(14044).c_str(), seconds / 60);
+      label = StringUtils::Format(g_localizeStrings.Get(14044), seconds / 60);
     else
-      label = StringUtils::Format(g_localizeStrings.Get(14045).c_str(), seconds);
+      label = StringUtils::Format(g_localizeStrings.Get(14045), seconds);
 
     list.insert(list.begin(), IntegerSettingOption("-" + label, seconds * -1));
     list.emplace_back(label, seconds);

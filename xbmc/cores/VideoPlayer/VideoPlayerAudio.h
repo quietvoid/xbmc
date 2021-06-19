@@ -14,6 +14,7 @@
 #include "DVDStreamInfo.h"
 #include "IVideoPlayer.h"
 #include "cores/VideoPlayer/Interface/TimingConstants.h"
+#include "threads/SystemClock.h"
 #include "threads/Thread.h"
 #include "utils/BitstreamStats.h"
 
@@ -42,7 +43,10 @@ public:
   bool HasData() const override { return m_messageQueue.GetDataSize() > 0; }
   int  GetLevel() const override { return m_messageQueue.GetLevel(); }
   bool IsInited() const override { return m_messageQueue.IsInited(); }
-  void SendMessage(CDVDMsg* pMsg, int priority = 0) override { m_messageQueue.Put(pMsg, priority); }
+  void SendMessage(std::shared_ptr<CDVDMsg> pMsg, int priority = 0) override
+  {
+    m_messageQueue.Put(pMsg, priority);
+  }
   void FlushMessages() override { m_messageQueue.Flush(); }
 
   void SetDynamicRangeCompression(long drc) override { m_audioSink.SetDynamicRangeCompression(drc); }
@@ -64,7 +68,7 @@ protected:
 
   bool ProcessDecoderOutput(DVDAudioFrame &audioframe);
   void UpdatePlayerInfo();
-  void OpenStream(CDVDStreamInfo &hints, CDVDAudioCodec* codec);
+  void OpenStream(CDVDStreamInfo& hints, std::unique_ptr<CDVDAudioCodec> codec);
   //! Switch codec if needed. Called when the sample rate gotten from the
   //! codec changes, in which case we may want to switch passthrough on/off.
   bool SwitchCodecIfNeeded();
@@ -80,7 +84,7 @@ protected:
 
   CAudioSinkAE m_audioSink; // audio output device
   CDVDClock* m_pClock; // dvd master clock
-  CDVDAudioCodec* m_pAudioCodec; // audio codec
+  std::unique_ptr<CDVDAudioCodec> m_pAudioCodec; // audio codec
   BitstreamStats m_audioStats;
 
   int m_speed;

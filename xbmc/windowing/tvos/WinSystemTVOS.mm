@@ -46,13 +46,15 @@
 #import <OpenGLES/ES2/glext.h>
 #import <QuartzCore/CADisplayLink.h>
 
+using namespace std::chrono_literals;
+
 #define CONST_HDMI "HDMI"
 
 // if there was a devicelost callback
 // but no device reset for 3 secs
 // a timeout fires the reset callback
 // (for ensuring that e.x. AE isn't stuck)
-constexpr uint32_t LOST_DEVICE_TIMEOUT_MS{3000};
+constexpr auto LOST_DEVICE_TIMEOUT_MS{3000ms};
 
 // TVOSDisplayLinkCallback is defined in the lower part of the file
 @interface TVOSDisplayLinkCallback : NSObject
@@ -183,7 +185,7 @@ bool CWinSystemTVOS::CreateNewWindow(const std::string& name, bool fullScreen, R
     m_eglext += " ";
   }
 
-  CLog::Log(LOGDEBUG, "EGL_EXTENSIONS: {}", m_eglext.c_str());
+  CLog::Log(LOGDEBUG, "EGL_EXTENSIONS: {}", m_eglext);
 
   // register platform dependent objects
   CDVDFactoryCodec::ClearHWAccels();
@@ -223,7 +225,7 @@ bool CWinSystemTVOS::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool b
   m_bFullScreen = fullScreen;
 
   CLog::Log(LOGDEBUG, "About to switch to {} x {} @ {}", m_nWidth, m_nHeight, res.fRefreshRate);
-  SwitchToVideoMode(res.iWidth, res.iHeight, res.fRefreshRate);
+  SwitchToVideoMode(res.iWidth, res.iHeight, static_cast<double>(res.fRefreshRate));
   CRenderSystemGLES::ResetRenderSystem(res.iWidth, res.iHeight);
 
   return true;
@@ -243,7 +245,7 @@ bool CWinSystemTVOS::GetScreenResolution(int* w, int* h, double* fps, int screen
 {
   *w = [g_xbmcController.displayManager getScreenSize].width;
   *h = [g_xbmcController.displayManager getScreenSize].height;
-  *fps = [g_xbmcController.displayManager getDisplayRate];
+  *fps = static_cast<double>([g_xbmcController.displayManager getDisplayRate]);
 
   CLog::Log(LOGDEBUG, "Current resolution Screen: {} with {} x {} @ {}", screenIdx, *w, *h, *fps);
   return true;
@@ -342,7 +344,7 @@ void CWinSystemTVOS::OnAppFocusChange(bool focus)
 {
   CSingleLock lock(m_resourceSection);
   m_bIsBackgrounded = !focus;
-  CLog::Log(LOGDEBUG, "CWinSystemTVOS::OnAppFocusChange: %d", focus ? 1 : 0);
+  CLog::Log(LOGDEBUG, "CWinSystemTVOS::OnAppFocusChange: {}", focus ? 1 : 0);
   for (auto dispResource : m_resources)
     dispResource->OnAppFocusChange(focus);
 }

@@ -155,9 +155,9 @@ static bool GetIntegerOptions(const SettingConstPtr& setting,
         if (i == pSettingInt->GetMinimum() && control->GetMinimumLabel() > -1)
           strLabel = Localize(control->GetMinimumLabel(), localizer);
         else if (control->GetFormatLabel() > -1)
-          strLabel = StringUtils::Format(Localize(control->GetFormatLabel(), localizer).c_str(), i);
+          strLabel = StringUtils::Format(Localize(control->GetFormatLabel(), localizer), i);
         else
-          strLabel = StringUtils::Format(control->GetFormatString().c_str(), i);
+          strLabel = StringUtils::Format(control->GetFormatString(), i);
 
         options.push_back(IntegerSettingOption(strLabel, i));
       }
@@ -410,9 +410,9 @@ CGUIControlSpinExSetting::CGUIControlSpinExSetting(CGUISpinControlEx* pSpin,
         if (value == pSettingNumber->GetMinimum() && control->GetMinimumLabel() > -1)
           strLabel = Localize(control->GetMinimumLabel());
         else if (control->GetFormatLabel() > -1)
-          strLabel = StringUtils::Format(Localize(control->GetFormatLabel()).c_str(), value);
+          strLabel = StringUtils::Format(Localize(control->GetFormatLabel()), value);
         else
-          strLabel = StringUtils::Format(control->GetFormatString().c_str(), value);
+          strLabel = StringUtils::Format(control->GetFormatString(), value);
 
         m_pSpin->AddLabel(strLabel, index);
       }
@@ -438,7 +438,7 @@ bool CGUIControlSpinExSetting::OnClick()
       auto pSettingNumber = std::static_pointer_cast<CSettingNumber>(m_pSetting);
       const auto& controlFormat = m_pSetting->GetControl()->GetFormat();
       if (controlFormat == "number")
-        SetValid(pSettingNumber->SetValue(m_pSpin->GetFloatValue()));
+        SetValid(pSettingNumber->SetValue(static_cast<double>(m_pSpin->GetFloatValue())));
       else
         SetValid(pSettingNumber->SetValue(pSettingNumber->GetMinimum() +
                                           pSettingNumber->GetStep() * m_pSpin->GetValue()));
@@ -1362,7 +1362,7 @@ bool CGUIControlSliderSetting::OnClick()
 
     case SettingType::Number:
       SetValid(std::static_pointer_cast<CSettingNumber>(m_pSetting)
-                   ->SetValue(m_pSlider->GetFloatValue()));
+                   ->SetValue(static_cast<double>(m_pSlider->GetFloatValue())));
       break;
 
     default:
@@ -1407,7 +1407,7 @@ void CGUIControlSliderSetting::Update(bool fromControl, bool updateDisplayOnly)
           std::static_pointer_cast<CSettingNumber>(m_pSetting);
       double value;
       if (fromControl)
-        value = m_pSlider->GetFloatValue();
+        value = static_cast<double>(m_pSlider->GetFloatValue());
       else
       {
         value = std::static_pointer_cast<CSettingNumber>(m_pSetting)->GetValue();
@@ -1470,10 +1470,9 @@ bool CGUIControlSliderSetting::FormatText(const std::string& formatString,
   try
   {
     if (value.isDouble())
-      formattedText = StringUtils::Format(formatString.c_str(), value.asDouble());
+      formattedText = StringUtils::Format(formatString, value.asDouble());
     else
-      formattedText =
-          StringUtils::Format(formatString.c_str(), static_cast<int>(value.asInteger()));
+      formattedText = StringUtils::Format(formatString, static_cast<int>(value.asInteger()));
   }
   catch (const std::runtime_error& err)
   {
@@ -1645,13 +1644,12 @@ void CGUIControlRangeSetting::Update(bool fromControl, bool updateDisplayOnly)
       }
       else
       {
-        strTextLower = StringUtils::Format(valueFormat.c_str(), valueLower);
+        strTextLower = StringUtils::Format(valueFormat, valueLower);
         strTextUpper = StringUtils::Format(valueFormat.c_str(), valueUpper);
       }
 
       if (valueLower != valueUpper)
-        strText =
-            StringUtils::Format(formatString.c_str(), strTextLower.c_str(), strTextUpper.c_str());
+        strText = StringUtils::Format(formatString, strTextLower, strTextUpper);
       else
         strText = strTextLower;
       break;
@@ -1675,12 +1673,11 @@ void CGUIControlRangeSetting::Update(bool fromControl, bool updateDisplayOnly)
         m_pSlider->SetFloatValue((float)valueUpper, CGUISliderControl::RangeSelectorUpper);
       }
 
-      strTextLower = StringUtils::Format(valueFormat.c_str(), valueLower);
+      strTextLower = StringUtils::Format(valueFormat, valueLower);
       if (valueLower != valueUpper)
       {
-        strTextUpper = StringUtils::Format(valueFormat.c_str(), valueUpper);
-        strText =
-            StringUtils::Format(formatString.c_str(), strTextLower.c_str(), strTextUpper.c_str());
+        strTextUpper = StringUtils::Format(valueFormat, valueUpper);
+        strText = StringUtils::Format(formatString, strTextLower, strTextUpper);
       }
       else
         strText = strTextLower;

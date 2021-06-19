@@ -17,6 +17,7 @@
 
 using namespace KODI;
 using namespace GAME;
+using namespace std::chrono_literals;
 
 CGUIFeatureButton::CGUIFeatureButton(const CGUIButtonControl& buttonTemplate,
                                      IConfigurationWizard* wizard,
@@ -64,15 +65,15 @@ bool CGUIFeatureButton::DoPrompt(const std::string& strPrompt,
     std::string strLabel;
 
     if (bWarn)
-      strLabel = StringUtils::Format(strWarn.c_str(), strFeature.c_str(), secondsRemaining);
+      strLabel = StringUtils::Format(strWarn, strFeature, secondsRemaining);
     else
-      strLabel = StringUtils::Format(strPrompt.c_str(), strFeature.c_str(), secondsRemaining);
+      strLabel = StringUtils::Format(strPrompt, strFeature, secondsRemaining);
 
     msgLabel.SetLabel(strLabel);
     CApplicationMessenger::GetInstance().SendGUIMessage(msgLabel, WINDOW_INVALID, false);
 
     waitEvent.Reset();
-    bInterrupted = waitEvent.WaitMSec(1000); // Wait 1 second
+    bInterrupted = waitEvent.Wait(1000ms); // Wait 1 second
 
     if (bInterrupted)
       break;

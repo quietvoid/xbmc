@@ -19,6 +19,7 @@
 #include "messaging/ApplicationMessenger.h"
 #include "pvr/PVRManager.h"
 #include "pvr/channels/PVRChannel.h"
+#include "pvr/channels/PVRChannelGroupMember.h"
 #include "pvr/epg/EpgInfoTag.h"
 #include "pvr/guilib/GUIEPGGridContainerModel.h"
 #include "utils/MathUtils.h"
@@ -223,9 +224,11 @@ void CGUIEPGGridContainer::Process(unsigned int currentTime, CDirtyRegionList& d
 
   if (m_pageControl)
   {
-    int iItem = (m_orientation == VERTICAL)
-      ? MathUtils::round_int(m_channelScrollOffset / m_channelHeight)
-      : MathUtils::round_int(m_programmeScrollOffset / (m_gridHeight / m_blocksPerPage));
+    int iItem =
+        (m_orientation == VERTICAL)
+            ? MathUtils::round_int(static_cast<double>(m_channelScrollOffset / m_channelHeight))
+            : MathUtils::round_int(
+                  static_cast<double>(m_programmeScrollOffset / (m_gridHeight / m_blocksPerPage)));
 
     CGUIMessage msg(GUI_MSG_ITEM_SELECT, GetID(), m_pageControl, iItem);
     SendWindowMessage(msg);
@@ -541,7 +544,7 @@ bool CGUIEPGGridContainer::OnAction(const CAction& action)
         m_analogScrollCount += action.GetAmount() * action.GetAmount();
         bool handled = false;
 
-        while (m_analogScrollCount > 0.4)
+        while (m_analogScrollCount > 0.4f)
         {
           handled = true;
           m_analogScrollCount -= 0.4f;
@@ -560,7 +563,7 @@ bool CGUIEPGGridContainer::OnAction(const CAction& action)
         m_analogScrollCount += action.GetAmount() * action.GetAmount();
         bool handled = false;
 
-        while (m_analogScrollCount > 0.4)
+        while (m_analogScrollCount > 0.4f)
         {
           handled = true;
           m_analogScrollCount -= 0.4f;
@@ -584,7 +587,7 @@ bool CGUIEPGGridContainer::OnAction(const CAction& action)
         m_analogScrollCount += action.GetAmount() * action.GetAmount();
         bool handled = false;
 
-        while (m_analogScrollCount > 0.4)
+        while (m_analogScrollCount > 0.4f)
         {
           handled = true;
           m_analogScrollCount -= 0.4f;
@@ -605,7 +608,7 @@ bool CGUIEPGGridContainer::OnAction(const CAction& action)
         m_analogScrollCount += action.GetAmount() * action.GetAmount();
         bool handled = false;
 
-        while (m_analogScrollCount > 0.4)
+        while (m_analogScrollCount > 0.4f)
         {
           handled = true;
           m_analogScrollCount -= 0.4f;
@@ -858,7 +861,8 @@ float CGUIEPGGridContainer::GetProgrammeScrollOffsetPos() const
 int CGUIEPGGridContainer::GetChannelScrollOffset(CGUIListItemLayout* layout) const
 {
   if (m_bEnableChannelScrolling)
-    return MathUtils::round_int(m_channelScrollOffset / layout->Size(m_orientation));
+    return MathUtils::round_int(
+        static_cast<double>(m_channelScrollOffset / layout->Size(m_orientation)));
   else
     return m_channelOffset;
 }
@@ -866,7 +870,7 @@ int CGUIEPGGridContainer::GetChannelScrollOffset(CGUIListItemLayout* layout) con
 int CGUIEPGGridContainer::GetProgrammeScrollOffset() const
 {
   if (m_bEnableProgrammeScrolling)
-    return MathUtils::round_int(m_programmeScrollOffset / m_blockSize);
+    return MathUtils::round_int(static_cast<double>(m_programmeScrollOffset / m_blockSize));
   else
     return m_blockOffset;
 }
@@ -1124,7 +1128,7 @@ bool CGUIEPGGridContainer::SetChannel(const CPVRChannelNumber& channelNumber)
   for (int iIndex = 0; iIndex < m_gridModel->ChannelItemsSize(); iIndex++)
   {
     const CPVRChannelNumber& number =
-        m_gridModel->GetChannelItem(iIndex)->GetPVRChannelInfoTag()->ChannelNumber();
+        m_gridModel->GetChannelItem(iIndex)->GetPVRChannelGroupMemberInfoTag()->ChannelNumber();
     if (number == channelNumber)
     {
       GoToChannel(iIndex);
@@ -1268,9 +1272,11 @@ EVENT_RESULT CGUIEPGGridContainer::OnMouseEvent(const CPoint& point, const CMous
       // we're done with exclusive access
       CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
       SendWindowMessage(msg);
-      ScrollToChannelOffset(MathUtils::round_int(m_channelScrollOffset / m_channelLayout->Size(m_orientation)));
+      ScrollToChannelOffset(MathUtils::round_int(
+          static_cast<double>(m_channelScrollOffset / m_channelLayout->Size(m_orientation))));
       SetChannel(m_channelCursor);
-      ScrollToBlockOffset(MathUtils::round_int(m_programmeScrollOffset / m_blockSize));
+      ScrollToBlockOffset(
+          MathUtils::round_int(static_cast<double>(m_programmeScrollOffset / m_blockSize)));
       SetBlock(m_blockCursor);
       return EVENT_RESULT_HANDLED;
     }
@@ -1282,8 +1288,10 @@ EVENT_RESULT CGUIEPGGridContainer::OnMouseEvent(const CPoint& point, const CMous
       {
         CSingleLock lock(m_critSection);
 
-        m_channelOffset = MathUtils::round_int(m_channelScrollOffset / m_channelLayout->Size(m_orientation));
-        m_blockOffset = MathUtils::round_int(m_programmeScrollOffset / m_blockSize);
+        m_channelOffset = MathUtils::round_int(
+            static_cast<double>(m_channelScrollOffset / m_channelLayout->Size(m_orientation)));
+        m_blockOffset =
+            MathUtils::round_int(static_cast<double>(m_programmeScrollOffset / m_blockSize));
         ValidateOffset();
       }
       return EVENT_RESULT_HANDLED;
@@ -1347,7 +1355,7 @@ bool CGUIEPGGridContainer::OnMouseWheel(char wheel, const CPoint& point)
   return true;
 }
 
-std::shared_ptr<CPVRChannel> CGUIEPGGridContainer::GetSelectedChannel() const
+std::shared_ptr<CPVRChannelGroupMember> CGUIEPGGridContainer::GetSelectedChannelGroupMember() const
 {
   CFileItemPtr fileItem;
   {
@@ -1356,10 +1364,10 @@ std::shared_ptr<CPVRChannel> CGUIEPGGridContainer::GetSelectedChannel() const
       fileItem = m_gridModel->GetChannelItem(m_channelCursor + m_channelOffset);
   }
 
-  if (fileItem && fileItem->HasPVRChannelInfoTag())
-    return fileItem->GetPVRChannelInfoTag();
+  if (fileItem)
+    return fileItem->GetPVRChannelGroupMemberInfoTag();
 
-  return std::shared_ptr<CPVRChannel>();
+  return {};
 }
 
 CDateTime CGUIEPGGridContainer::GetSelectedDate() const
@@ -1411,21 +1419,22 @@ std::string CGUIEPGGridContainer::GetLabel(int info) const
   {
   case CONTAINER_NUM_PAGES:
     if (m_channelsPerPage > 0)
-      label = StringUtils::Format("%u", (m_gridModel->ChannelItemsSize() + m_channelsPerPage - 1) / m_channelsPerPage);
+      label = std::to_string((m_gridModel->ChannelItemsSize() + m_channelsPerPage - 1) /
+                             m_channelsPerPage);
     else
-      label = StringUtils::Format("%u", 0);
+      label = std::to_string(0);
     break;
   case CONTAINER_CURRENT_PAGE:
     if (m_channelsPerPage > 0)
-      label = StringUtils::Format("%u", 1 + (m_channelCursor + m_channelOffset) / m_channelsPerPage);
+      label = std::to_string(1 + (m_channelCursor + m_channelOffset) / m_channelsPerPage);
     else
-      label = StringUtils::Format("%u", 1);
+      label = std::to_string(1);
     break;
   case CONTAINER_POSITION:
-    label = StringUtils::Format("%i", 1 + m_channelCursor + m_channelOffset);
+    label = std::to_string(1 + m_channelCursor + m_channelOffset);
     break;
   case CONTAINER_NUM_ITEMS:
-    label = StringUtils::Format("%u", m_gridModel->ChannelItemsSize());
+    label = std::to_string(m_gridModel->ChannelItemsSize());
     break;
   default:
       break;
@@ -2503,8 +2512,8 @@ void CGUIEPGGridContainer::HandleProgrammeGrid(bool bRender, unsigned int curren
         // increment our X position
         posA2 += m_gridModel->GetGridItemWidth(
             channel, block); // assumes focused & unfocused layouts have equal length
-        block +=
-            MathUtils::round_int(m_gridModel->GetGridItemOriginWidth(channel, block) / m_blockSize);
+        block += MathUtils::round_int(
+            static_cast<double>(m_gridModel->GetGridItemOriginWidth(channel, block) / m_blockSize));
       }
     }
 

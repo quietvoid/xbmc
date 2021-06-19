@@ -157,7 +157,7 @@ bool CEGLUtils::HasClientExtension(const std::string& name)
 void CEGLUtils::Log(int logLevel, const std::string& what)
 {
   EGLenum error = eglGetError();
-  std::string errorStr = StringUtils::Format("0x%04X", error);
+  std::string errorStr = StringUtils::Format("{:#04X}", error);
 
   auto eglError = eglErrors.find(error);
   if (eglError != eglErrors.end())
@@ -165,7 +165,7 @@ void CEGLUtils::Log(int logLevel, const std::string& what)
     errorStr = eglError->second;
   }
 
-  CLog::Log(logLevel, "{} ({})", what.c_str(), errorStr);
+  CLog::Log(logLevel, "{} ({})", what, errorStr);
 }
 
 CEGLContextUtils::CEGLContextUtils(EGLenum platform, std::string const& platformExtension)
@@ -259,16 +259,16 @@ bool CEGLContextUtils::InitializeDisplay(EGLint renderingApi)
 
   const char* value;
   value = eglQueryString(m_eglDisplay, EGL_VERSION);
-  CLog::Log(LOGINFO, "EGL_VERSION = %s", value ? value : "NULL");
+  CLog::Log(LOGINFO, "EGL_VERSION = {}", value ? value : "NULL");
 
   value = eglQueryString(m_eglDisplay, EGL_VENDOR);
-  CLog::Log(LOGINFO, "EGL_VENDOR = %s", value ? value : "NULL");
+  CLog::Log(LOGINFO, "EGL_VENDOR = {}", value ? value : "NULL");
 
   value = eglQueryString(m_eglDisplay, EGL_EXTENSIONS);
-  CLog::Log(LOGINFO, "EGL_EXTENSIONS = %s", value ? value : "NULL");
+  CLog::Log(LOGINFO, "EGL_EXTENSIONS = {}", value ? value : "NULL");
 
   value = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-  CLog::Log(LOGINFO, "EGL_CLIENT_EXTENSIONS = %s", value ? value : "NULL");
+  CLog::Log(LOGINFO, "EGL_CLIENT_EXTENSIONS = {}", value ? value : "NULL");
 
   if (eglBindAPI(renderingApi) != EGL_TRUE)
   {
@@ -359,16 +359,19 @@ bool CEGLContextUtils::ChooseConfig(EGLint renderableType, EGLint visualId, bool
     return false;
   }
 
-  CLog::Log(LOGDEBUG, "EGL %sConfig Attributes:", hdr ? "HDR " : "");
+  CLog::Log(LOGDEBUG, "EGL {}Config Attributes:", hdr ? "HDR " : "");
 
   for (const auto &eglAttribute : eglAttributes)
   {
     EGLint value{0};
     if (eglGetConfigAttrib(m_eglDisplay, *currentConfig, eglAttribute.first, &value) != EGL_TRUE)
-      CEGLUtils::Log(LOGERROR, StringUtils::Format("failed to query EGL attribute %s", eglAttribute.second));
+      CEGLUtils::Log(LOGERROR,
+                     StringUtils::Format("failed to query EGL attribute {}", eglAttribute.second));
 
     // we only need to print the hex value if it's an actual EGL define
-    CLog::Log(LOGDEBUG, "  %s: %s", eglAttribute.second, (value >= 0x3000 && value <= 0x3200) ? StringUtils::Format("0x%04x", value) : StringUtils::Format("%d", value));
+    CLog::Log(LOGDEBUG, "  {}: {}", eglAttribute.second,
+              (value >= 0x3000 && value <= 0x3200) ? StringUtils::Format("{:#04x}", value)
+                                                   : std::to_string(value));
   }
 
   return true;
@@ -420,7 +423,7 @@ bool CEGLContextUtils::CreateContext(CEGLAttributesVec contextAttribs)
   if (m_eglContext == EGL_NO_CONTEXT)
   {
     // This is expected to fail under some circumstances, so log as debug
-    CLog::Log(LOGDEBUG, "Failed to create EGL context (EGL error %d)", eglGetError());
+    CLog::Log(LOGDEBUG, "Failed to create EGL context (EGL error {})", eglGetError());
     return false;
   }
 
@@ -436,8 +439,8 @@ bool CEGLContextUtils::BindContext()
 
   if (eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext) != EGL_TRUE)
   {
-    CLog::Log(LOGERROR, "Failed to make context current %p %p %p",
-                         m_eglDisplay, m_eglSurface, m_eglContext);
+    CLog::Log(LOGERROR, "Failed to make context current {} {} {}", fmt::ptr(m_eglDisplay),
+              fmt::ptr(m_eglSurface), fmt::ptr(m_eglContext));
     return false;
   }
 

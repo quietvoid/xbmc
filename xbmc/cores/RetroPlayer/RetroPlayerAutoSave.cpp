@@ -14,8 +14,12 @@
 
 using namespace KODI;
 using namespace RETRO;
+using namespace std::chrono_literals;
 
-#define AUTOSAVE_DURATION_SECS 10 // Auto-save every 10 seconds
+namespace
+{
+constexpr auto AUTOSAVE_DURATION_SECS = 10s; // Auto-save every 10 seconds
+}
 
 CRetroPlayerAutoSave::CRetroPlayerAutoSave(IAutoSaveCallback& callback,
                                            GAME::CGameSettings& settings)
@@ -39,7 +43,7 @@ void CRetroPlayerAutoSave::Process()
 
   while (!m_bStop)
   {
-    CThread::Sleep(AUTOSAVE_DURATION_SECS * 1000);
+    CThread::Sleep(AUTOSAVE_DURATION_SECS);
 
     if (m_bStop)
       break;
@@ -51,8 +55,7 @@ void CRetroPlayerAutoSave::Process()
     {
       std::string savePath = m_callback.CreateSavestate();
       if (!savePath.empty())
-        CLog::Log(LOGDEBUG, "RetroPlayer[SAVE]: Saved state to %s",
-                  CURL::GetRedacted(savePath).c_str());
+        CLog::Log(LOGDEBUG, "RetroPlayer[SAVE]: Saved state to {}", CURL::GetRedacted(savePath));
     }
   }
 

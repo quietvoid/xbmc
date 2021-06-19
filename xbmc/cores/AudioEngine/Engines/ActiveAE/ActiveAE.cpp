@@ -123,9 +123,9 @@ void CEngineStats::UpdateStream(CActiveAEStream *stream)
         if (m_pcmOutput)
           delay += (float)(*itBuf)->pkt->nb_samples / (*itBuf)->pkt->config.sample_rate;
         else
-          delay += m_sinkFormat.m_streamInfo.GetDuration() / 1000;
+          delay += static_cast<float>(m_sinkFormat.m_streamInfo.GetDuration() / 1000.0);
       }
-      str.m_bufferedTime = delay;
+      str.m_bufferedTime = static_cast<double>(delay);
       stream->m_bufferedTime = 0;
       break;
     }
@@ -137,7 +137,7 @@ void CEngineStats::GetDelay(AEDelayStatus& status, CActiveAEStream *stream)
 {
   CSingleLock lock(m_lock);
   status = m_sinkDelay;
-  status.delay += m_sinkLatency;
+  status.delay += static_cast<double>(m_sinkLatency);
   if (m_pcmOutput)
     status.delay += (double)m_bufferedSamples / m_sinkSampleRate;
   else
@@ -148,8 +148,8 @@ void CEngineStats::GetDelay(AEDelayStatus& status, CActiveAEStream *stream)
     if (str.m_streamId == stream->m_id)
     {
       CSingleLock lock(stream->m_statsLock);
-      float buffertime = str.m_bufferedTime + stream->m_bufferedTime;
-      status.delay += buffertime / str.m_resampleRatio;
+      float buffertime = static_cast<float>(str.m_bufferedTime) + stream->m_bufferedTime;
+      status.delay += static_cast<double>(buffertime) / str.m_resampleRatio;
       return;
     }
   }
@@ -166,15 +166,15 @@ void CEngineStats::GetSyncInfo(CAESyncInfo& info, CActiveAEStream *stream)
   else
     status.delay += (double)m_bufferedSamples * m_sinkFormat.m_streamInfo.GetDuration() / 1000;
 
-  status.delay += m_sinkLatency;
+  status.delay += static_cast<double>(m_sinkLatency);
 
   for (auto &str : m_streamStats)
   {
     if (str.m_streamId == stream->m_id)
     {
       CSingleLock lock(stream->m_statsLock);
-      float buffertime = str.m_bufferedTime + stream->m_bufferedTime;
-      status.delay += buffertime / str.m_resampleRatio;
+      float buffertime = static_cast<float>(str.m_bufferedTime) + stream->m_bufferedTime;
+      status.delay += static_cast<double>(buffertime) / str.m_resampleRatio;
       info.delay = status.GetDelay();
       info.error = str.m_syncError;
       info.errortime = str.m_errorTime;
@@ -195,8 +195,8 @@ float CEngineStats::GetCacheTime(CActiveAEStream *stream)
     if (str.m_streamId == stream->m_id)
     {
       CSingleLock lock(stream->m_statsLock);
-      float buffertime = str.m_bufferedTime + stream->m_bufferedTime;
-      delay += buffertime / str.m_resampleRatio;
+      float buffertime = static_cast<float>(str.m_bufferedTime) + stream->m_bufferedTime;
+      delay += buffertime / static_cast<float>(str.m_resampleRatio);
       break;
     }
   }
@@ -210,16 +210,17 @@ float CEngineStats::GetCacheTotal()
 
 float CEngineStats::GetMaxDelay() const
 {
-  return MAX_CACHE_LEVEL + MAX_WATER_LEVEL + m_sinkCacheTotal;
+  return static_cast<float>(MAX_CACHE_LEVEL) + static_cast<float>(MAX_WATER_LEVEL) +
+         m_sinkCacheTotal;
 }
 
 float CEngineStats::GetWaterLevel()
 {
   CSingleLock lock(m_lock);
   if (m_pcmOutput)
-    return (float)m_bufferedSamples / m_sinkSampleRate;
+    return static_cast<float>(m_bufferedSamples) / m_sinkSampleRate;
   else
-    return (float)m_bufferedSamples * m_sinkFormat.m_streamInfo.GetDuration() / 1000;
+    return static_cast<float>(m_bufferedSamples * m_sinkFormat.m_streamInfo.GetDuration()) / 1000;
 }
 
 void CEngineStats::SetSuspended(bool state)
@@ -424,7 +425,8 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
       }
       {
         std::string portName = port == NULL ? "timer" : port->portName;
-        CLog::Log(LOGWARNING, "CActiveAE::%s - signal: %d from port: %s not handled for state: %d", __FUNCTION__, signal, portName.c_str(), m_state);
+        CLog::Log(LOGWARNING, "CActiveAE::{} - signal: {} from port: {} not handled for state: {}",
+                  __FUNCTION__, signal, portName, m_state);
       }
       return;
 
@@ -618,7 +620,8 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
           }
           if (m_extLastDeviceChange.size() > 2)
           {
-            CLog::Log(LOGWARNING,"CActiveAE - received %ld device change events within one second", m_extLastDeviceChange.size());
+            CLog::Log(LOGWARNING, "CActiveAE - received {} device change events within one second",
+                      m_extLastDeviceChange.size());
             return;
           }
           m_extLastDeviceChange.push(now);
@@ -642,7 +645,7 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
         case CActiveAEControlProtocol::DEVICECOUNTCHANGE:
           const char* param;
           param = reinterpret_cast<const char*>(msg->data);
-          CLog::Log(LOGDEBUG, "CActiveAE - device count change event from driver: %s", param);
+          CLog::Log(LOGDEBUG, "CActiveAE - device count change event from driver: {}", param);
           m_sink.EnumerateSinkList(true, param);
           if (!m_sink.DeviceExist(m_settings.driver, m_currDevice))
           {
@@ -1011,7 +1014,7 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
       break;
 
     default: // we are in no state, should not happen
-      CLog::Log(LOGERROR, "CActiveAE::%s - no valid state: %d", __FUNCTION__, m_state);
+      CLog::Log(LOGERROR, "CActiveAE::{} - no valid state: {}", __FUNCTION__, m_state);
       return;
     }
   } // for
@@ -1099,7 +1102,7 @@ void CActiveAE::Process()
     }
 
     // wait for message
-    else if (m_outMsgEvent.WaitMSec(m_extTimeout))
+    else if (m_outMsgEvent.Wait(std::chrono::milliseconds(m_extTimeout)))
     {
       m_extTimeout = timer.MillisLeft();
       continue;
@@ -1188,7 +1191,9 @@ void CActiveAE::Configure(AEAudioFormat *desiredFmt)
       double buffertime = (double)m_sinkFormat.m_frames / m_sinkFormat.m_sampleRate;
       if (buffertime > MAX_BUFFER_TIME)
       {
-        CLog::Log(LOGWARNING, "ActiveAE::%s - sink returned large buffer of %d ms, reducing to %d ms", __FUNCTION__, (int)(buffertime * 1000), (int)(MAX_BUFFER_TIME*1000));
+        CLog::Log(LOGWARNING,
+                  "ActiveAE::{} - sink returned large buffer of {} ms, reducing to {} ms",
+                  __FUNCTION__, (int)(buffertime * 1000), (int)(MAX_BUFFER_TIME * 1000));
         m_sinkFormat.m_frames = MAX_BUFFER_TIME * m_sinkFormat.m_sampleRate;
       }
     }
@@ -1561,14 +1566,14 @@ void CActiveAE::FlushEngine()
     bool success = reply->signal == CSinkControlProtocol::ACC;
     if (!success)
     {
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error on flush", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error on flush", __FUNCTION__);
       m_extError = true;
     }
     reply->Release();
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to flush", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to flush", __FUNCTION__);
     m_extError = true;
   }
   m_stats.Reset(m_sinkFormat.m_sampleRate, m_mode == MODE_PCM);
@@ -1724,7 +1729,8 @@ void CActiveAE::ApplySettingsToFormat(AEAudioFormat &format, AudioSettings &sett
       if (format.m_sampleRate > m_settings.samplerate)
       {
         format.m_sampleRate = m_settings.samplerate;
-        CLog::Log(LOGINFO, "CActiveAE::ApplySettings - limit samplerate for SPDIF to %d", format.m_sampleRate);
+        CLog::Log(LOGINFO, "CActiveAE::ApplySettings - limit samplerate for SPDIF to {}",
+                  format.m_sampleRate);
       }
       format.m_channelLayout = AE_CH_LAYOUT_2_0;
     }
@@ -1733,7 +1739,8 @@ void CActiveAE::ApplySettingsToFormat(AEAudioFormat &format, AudioSettings &sett
     {
       format.m_sampleRate = m_settings.samplerate;
       format.m_dataFormat = AE_FMT_FLOAT;
-      CLog::Log(LOGINFO, "CActiveAE::ApplySettings - Forcing samplerate to %d", format.m_sampleRate);
+      CLog::Log(LOGINFO, "CActiveAE::ApplySettings - Forcing samplerate to {}",
+                format.m_sampleRate);
     }
 
     // sinks may not support mono
@@ -1790,7 +1797,7 @@ bool CActiveAE::InitSink()
     if (!success)
     {
       reply->Release();
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error", __FUNCTION__);
       m_extError = true;
       return false;
     }
@@ -1808,7 +1815,7 @@ bool CActiveAE::InitSink()
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to init", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to init", __FUNCTION__);
     m_stats.SetSinkCacheTotal(0);
     m_stats.SetSinkLatency(0);
     AEAudioFormat invalidFormat;
@@ -1834,7 +1841,7 @@ void CActiveAE::DrainSink()
     if (!success)
     {
       reply->Release();
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error on drain", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error on drain", __FUNCTION__);
       m_extError = true;
       return;
     }
@@ -1842,7 +1849,7 @@ void CActiveAE::DrainSink()
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to drain", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to drain", __FUNCTION__);
     m_extError = true;
     return;
   }
@@ -1859,14 +1866,14 @@ void CActiveAE::UnconfigureSink()
     bool success = reply->signal == CSinkControlProtocol::ACC;
     if (!success)
     {
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error", __FUNCTION__);
       m_extError = true;
     }
     reply->Release();
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to unconfigure", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to unconfigure", __FUNCTION__);
     m_extError = true;
   }
 
@@ -1904,7 +1911,8 @@ bool CActiveAE::RunStages()
       float buftime = (float)(*it)->m_inputBuffers->m_format.m_frames / (*it)->m_inputBuffers->m_format.m_sampleRate;
       if ((*it)->m_inputBuffers->m_format.m_dataFormat == AE_FMT_RAW)
         buftime = (*it)->m_inputBuffers->m_format.m_streamInfo.GetDuration() / 1000;
-      while ((time < MAX_CACHE_LEVEL || (*it)->m_streamIsBuffering) && !(*it)->m_inputBuffers->m_freeSamples.empty())
+      while ((time < static_cast<float>(MAX_CACHE_LEVEL) || (*it)->m_streamIsBuffering) &&
+             !(*it)->m_inputBuffers->m_freeSamples.empty())
       {
         buffer = (*it)->m_inputBuffers->GetFreeBuffer();
         (*it)->m_processingSamples.push_back(buffer);
@@ -1943,8 +1951,8 @@ bool CActiveAE::RunStages()
     }
   }
 
-  if (m_stats.GetWaterLevel() < MAX_WATER_LEVEL &&
-     (m_mode != MODE_TRANSCODE || (m_encoderBuffers && !m_encoderBuffers->m_freeSamples.empty())))
+  if (m_stats.GetWaterLevel() < static_cast<float>(MAX_WATER_LEVEL) &&
+      (m_mode != MODE_TRANSCODE || (m_encoderBuffers && !m_encoderBuffers->m_freeSamples.empty())))
   {
     // calculate sync error
     for (it = m_streams.begin(); it != m_streams.end(); ++it)
@@ -1967,12 +1975,12 @@ bool CActiveAE::RunStages()
         double error = playingPts - (*it)->m_pClock->GetClock();
         if (error > maxError)
         {
-          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: %f", error);
+          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f}", error);
           error = maxError;
         }
         else if (error < -maxError)
         {
-          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: %f", error);
+          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f}", error);
           error = -maxError;
         }
         (*it)->m_syncError.Add(error);
@@ -2065,7 +2073,8 @@ bool CActiveAE::RunStages()
             // turned off downmix normalization,
             // or if sink format is float (in order to prevent from clipping)
             // we need to run on a per sample basis
-            if ((*it)->m_amplify != 1.0 || !(*it)->m_processingBuffers->DoesNormalize() || (m_sinkFormat.m_dataFormat == AE_FMT_FLOAT))
+            if ((*it)->m_amplify != 1.0f || !(*it)->m_processingBuffers->DoesNormalize() ||
+                (m_sinkFormat.m_dataFormat == AE_FMT_FLOAT))
             {
               nb_floats = out->pkt->config.channels / out->pkt->planes;
               nb_loops = out->pkt->nb_samples;
@@ -2132,7 +2141,7 @@ bool CActiveAE::RunStages()
 
             // for streams amplification of turned off downmix normalization
             // we need to run on a per sample basis
-            if ((*it)->m_amplify != 1.0 || !(*it)->m_processingBuffers->DoesNormalize())
+            if ((*it)->m_amplify != 1.0f || !(*it)->m_processingBuffers->DoesNormalize())
             {
               nb_floats = out->pkt->config.channels / out->pkt->planes;
               nb_loops = out->pkt->nb_samples;
@@ -2228,10 +2237,10 @@ bool CActiveAE::RunStages()
               m_vizBuffers->m_inputSamples.push_back(viz);
             }
             else
-              CLog::Log(LOGWARNING,"ActiveAE::%s - viz ran out of free buffers", __FUNCTION__);
+              CLog::Log(LOGWARNING, "ActiveAE::{} - viz ran out of free buffers", __FUNCTION__);
             AEDelayStatus status;
             m_stats.GetDelay(status);
-            int64_t now = XbmcThreads::SystemClockMillis();
+            int64_t now = std::chrono::steady_clock::now().time_since_epoch().count();
             int64_t timestamp = now + status.GetDelay() * 1000;
             busy |= m_vizBuffers->ResampleBuffers(timestamp);
             while(!m_vizBuffers->m_outputSamples.empty())
@@ -2385,13 +2394,14 @@ CSampleBuffer* CActiveAE::SyncStream(CActiveAEStream *stream)
     stream->m_processingBuffers->SetRR(1.0, m_settings.atempoThreshold);
     stream->m_resampleIntegral = 0;
     stream->m_lastSyncError = error;
-    CLog::Log(LOGDEBUG,"ActiveAE::SyncStream - average error %f above threshold of %f", error, threshold);
+    CLog::Log(LOGDEBUG, "ActiveAE::SyncStream - average error {:f} above threshold of {:f}", error,
+              threshold);
   }
   else if (newerror && stream->m_syncState == CAESyncInfo::AESyncState::SYNC_MUTE)
   {
     stream->m_syncState = CAESyncInfo::AESyncState::SYNC_ADJUST;
     stream->m_lastSyncError = error;
-    CLog::Log(LOGDEBUG,"ActiveAE::SyncStream - average error of %f, start adjusting", error);
+    CLog::Log(LOGDEBUG, "ActiveAE::SyncStream - average error of {:f}, start adjusting", error);
   }
 
   if (stream->m_syncState == CAESyncInfo::AESyncState::SYNC_MUTE)
@@ -2499,7 +2509,8 @@ CSampleBuffer* CActiveAE::SyncStream(CActiveAEStream *stream)
       {
         stream->m_syncState = CAESyncInfo::AESyncState::SYNC_MUTE;
         stream->m_syncError.Flush(100);
-        CLog::Log(LOGDEBUG,"ActiveAE::SyncStream - average error %f, last average error: %f", error, stream->m_lastSyncError);
+        CLog::Log(LOGDEBUG, "ActiveAE::SyncStream - average error {:f}, last average error: {:f}",
+                  error, stream->m_lastSyncError);
         stream->m_lastSyncError = error;
       }
       else
@@ -2508,7 +2519,8 @@ CSampleBuffer* CActiveAE::SyncStream(CActiveAEStream *stream)
         stream->m_syncError.Flush(1000);
         stream->m_resampleIntegral = 0;
         stream->m_processingBuffers->SetRR(1.0, m_settings.atempoThreshold);
-        CLog::Log(LOGDEBUG,"ActiveAE::SyncStream - average error %f below threshold of %f", error, 30.0);
+        CLog::Log(LOGDEBUG, "ActiveAE::SyncStream - average error {:f} below threshold of {:f}",
+                  error, 30.0);
       }
     }
 
@@ -2585,7 +2597,7 @@ void CActiveAE::MixSounds(CSoundPacket &dstSample)
 
 void CActiveAE::Deamplify(CSoundPacket &dstSample)
 {
-  if (m_volumeScaled < 1.0 || m_muted)
+  if (m_volumeScaled < 1.0f || m_muted)
   {
     int nb_floats = dstSample.nb_samples * dstSample.config.channels / dstSample.planes;
     float volume = m_muted ? 0.0f : m_volumeScaled;
@@ -2653,12 +2665,12 @@ void CActiveAE::Start()
     reply->Release();
     if (!success)
     {
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error", __FUNCTION__);
     }
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to init", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to init", __FUNCTION__);
   }
 
   m_inMsgEvent.Reset();
@@ -2846,13 +2858,13 @@ bool CActiveAE::Resume()
     reply->Release();
     if (!success)
     {
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error", __FUNCTION__);
       return false;
     }
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - failed to init", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - failed to init", __FUNCTION__);
     return false;
   }
 
@@ -2922,12 +2934,12 @@ void CActiveAE::OnLostDisplay()
     reply->Release();
     if (!success)
     {
-      CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
+      CLog::Log(LOGERROR, "ActiveAE::{} - returned error", __FUNCTION__);
     }
   }
   else
   {
-    CLog::Log(LOGERROR, "ActiveAE::%s - timed out", __FUNCTION__);
+    CLog::Log(LOGERROR, "ActiveAE::{} - timed out", __FUNCTION__);
   }
 }
 
@@ -3311,7 +3323,7 @@ IAEStream *CActiveAE::MakeStream(AEAudioFormat &audioFormat, unsigned int option
     reply->Release();
   }
 
-  CLog::Log(LOGERROR, "ActiveAE::%s - could not create stream", __FUNCTION__);
+  CLog::Log(LOGERROR, "ActiveAE::{} - could not create stream", __FUNCTION__);
   return NULL;
 }
 

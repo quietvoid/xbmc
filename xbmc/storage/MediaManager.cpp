@@ -103,7 +103,8 @@ bool CMediaManager::LoadSources()
   TiXmlElement* pRootElement = xmlDoc.RootElement();
   if (!pRootElement || StringUtils::CompareNoCase(pRootElement->Value(), "mediasources") != 0)
   {
-    CLog::Log(LOGERROR, "Error loading %s, Line %d (%s)", MEDIA_SOURCES_XML, xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    CLog::Log(LOGERROR, "Error loading {}, Line {} ({})", MEDIA_SOURCES_XML, xmlDoc.ErrorRow(),
+              xmlDoc.ErrorDesc());
     return false;
   }
 
@@ -196,7 +197,7 @@ void CMediaManager::GetNetworkLocations(VECSOURCES &locations, bool autolocation
     {
       const std::string& strDevices = g_localizeStrings.Get(33040); //"% Devices"
       share.strPath = "upnp://";
-      share.strName = StringUtils::Format(strDevices.c_str(), "UPnP"); //"UPnP Devices"
+      share.strName = StringUtils::Format(strDevices, "UPnP"); //"UPnP Devices"
       locations.push_back(share);
     }
 #endif
@@ -331,7 +332,7 @@ std::string CMediaManager::TranslateDevicePath(const std::string& devicePath, bo
   if(bReturnAsDevice == false)
     StringUtils::Replace(strDevice, "\\\\.\\","");
   else if(!strDevice.empty() && strDevice[1]==':')
-    strDevice = StringUtils::Format("\\\\.\\%c:", strDevice[0]);
+    strDevice = StringUtils::Format("\\\\.\\{}:", strDevice[0]);
 
   URIUtils::RemoveSlashAtEnd(strDevice);
 #endif
@@ -555,12 +556,14 @@ std::string CMediaManager::GetDiskUniqueId(const std::string& devicePath)
   DiscInfo info = GetDiscInfo(mediaPath);
   if (info.empty())
   {
-    CLog::Log(LOGDEBUG, "GetDiskUniqueId: Retrieving ID for path %s failed, ID is empty.", CURL::GetRedacted(mediaPath).c_str());
+    CLog::Log(LOGDEBUG, "GetDiskUniqueId: Retrieving ID for path {} failed, ID is empty.",
+              CURL::GetRedacted(mediaPath));
     return "";
   }
 
-  std::string strID = StringUtils::Format("removable://%s_%s", info.name.c_str(), info.serial.c_str());
-  CLog::Log(LOGDEBUG, "GetDiskUniqueId: Got ID %s for %s with path %s", strID.c_str(), info.type.c_str(), CURL::GetRedacted(mediaPath).c_str());
+  std::string strID = StringUtils::Format("removable://{}_{}", info.name, info.serial);
+  CLog::Log(LOGDEBUG, "GetDiskUniqueId: Got ID {} for {} with path {}", strID, info.type,
+            CURL::GetRedacted(mediaPath));
 
   return strID;
 }
@@ -778,7 +781,8 @@ bool CMediaManager::playStubFile(const CFileItem& item)
   {
     TiXmlElement* pRootElement = discStubXML.RootElement();
     if (!pRootElement || StringUtils::CompareNoCase(pRootElement->Value(), "discstub") != 0)
-      CLog::Log(LOGINFO, "No <discstub> node found for %s. Using default info dialog message", item.GetPath().c_str());
+      CLog::Log(LOGINFO, "No <discstub> node found for {}. Using default info dialog message",
+                item.GetPath());
     else
     {
       XMLUtils::GetString(pRootElement, "title", strLine1);

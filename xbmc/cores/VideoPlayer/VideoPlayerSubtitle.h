@@ -38,7 +38,7 @@ public:
   }
 
   bool AcceptsData() const override;
-  void SendMessage(CDVDMsg* pMsg, int priority = 0) override;
+  void SendMessage(std::shared_ptr<CDVDMsg> pMsg, int priority = 0) override;
   void FlushMessages() override {}
   bool OpenStream(CDVDStreamInfo hints) override { return OpenStream(hints, hints.filename); }
   bool OpenStream(CDVDStreamInfo &hints, std::string& filename);
@@ -49,9 +49,8 @@ public:
 private:
   CDVDOverlayContainer* m_pOverlayContainer;
 
-  CDVDSubtitleStream* m_pSubtitleStream;
-  CDVDSubtitleParser* m_pSubtitleFileParser;
-  CDVDOverlayCodec*   m_pOverlayCodec;
+  std::unique_ptr<CDVDSubtitleParser> m_pSubtitleFileParser;
+  std::unique_ptr<CDVDOverlayCodec> m_pOverlayCodec;
   CDVDDemuxSPU        m_dvdspus;
 
   CDVDStreamInfo      m_streaminfo;

@@ -49,7 +49,7 @@ namespace PVR
     //@{
 
     /*!
-     * @brief Delete this channel from the database and delete the corresponding EPG table if it exists.
+     * @brief Delete this channel from the database.
      * @return True if it was deleted successfully, false otherwise.
      */
     bool QueueDelete();
@@ -83,24 +83,6 @@ namespace PVR
      * @return True if the something changed, false otherwise.
      */
     bool SetChannelID(int iDatabaseId);
-
-    /*!
-     * @brief Set the channel number for this channel.
-     * @param channelNumber The new channel number
-     */
-    void SetChannelNumber(const CPVRChannelNumber& channelNumber);
-
-    /*!
-     * @brief Set the client channel number for this channel.
-     * @param clientChannelNumber The new client channel number
-     */
-    void SetClientChannelNumber(const CPVRChannelNumber& clientChannelNumber);
-
-    /*!
-     * @brief Get the channel number for this channel.
-     * @return The channel number.
-     */
-    const CPVRChannelNumber& ChannelNumber() const;
 
     /*!
      * @return True if this channel is a radio channel, false if not.
@@ -155,6 +137,13 @@ namespace PVR
     bool HasArchive() const;
 
     /*!
+     * @brief Set the archive support flag for this channel.
+     * @param bHasArchive True to set the flag, false to reset.
+     * @return True if the flag was changed, false otherwise.
+     */
+    bool SetArchive(bool bHasArchive);
+
+    /*!
      * @return The path to the icon for this channel.
      */
     std::string IconPath() const;
@@ -203,11 +192,9 @@ namespace PVR
     bool SetLastWatched(time_t iLastWatched);
 
     /*!
-     * @brief True if this channel has no file or stream name
-     * @return True if this channel has no file or stream name
+     * @brief Check whether this channel has unpersisted data changes.
+     * @return True if this channel has changes to persist, false otherwise
      */
-    bool IsEmpty() const;
-
     bool IsChanged() const;
 
     /*!
@@ -265,20 +252,8 @@ namespace PVR
      */
     std::string MimeType() const;
 
-    /*!
-     * @brief The path in the XBMC VFS to be used by PVRManager to open and read the stream.
-     * @return The path in the XBMC VFS to be used by PVRManager to open and read the stream.
-     */
-    std::string Path() const;
-
     // ISortable implementation
     void ToSortable(SortItem& sortable, Field field) const override;
-
-    /*!
-     * @brief Update the channel path
-     * @param channelGroup The (new) name of the group this channel belongs to
-     */
-    void UpdatePath(const std::string& channelGroup);
 
     /*!
      * @return Storage id for this channel in CPVRChannelGroup
@@ -438,13 +413,7 @@ namespace PVR
      * @brief Get the client order for this channel
      * @return iOrder The order for this channel
      */
-    int ClientOrder() const { return m_iOrder; }
-
-    /*!
-     * @brief Change the client order for this channel
-     * @param iOrder The new order for this channel
-     */
-    void SetClientOrder(int iOrder);
+    int ClientOrder() const { return m_iClientOrder; }
 
     /*!
      * @brief CEventStream callback for PVR events.
@@ -491,7 +460,6 @@ namespace PVR
     std::string m_strChannelName; /*!< the name for this channel used by XBMC */
     time_t m_iLastWatched = 0; /*!< last time channel has been watched */
     bool m_bChanged = false; /*!< true if anything in this entry was changed that needs to be persisted */
-    CPVRChannelNumber m_channelNumber; /*!< the active channel number this channel has in the currently selected channel group */
     std::shared_ptr<CPVRRadioRDSInfoTag> m_rdsTag; /*! < the radio rds data, if available for the channel. */
     bool m_bHasArchive = false; /*!< true if this channel supports archive */
     //@}
@@ -510,14 +478,13 @@ namespace PVR
     //@{
     int m_iUniqueId = -1; /*!< the unique identifier for this channel */
     int m_iClientId = -1; /*!< the identifier of the client that serves this channel */
-    CPVRChannelNumber m_clientChannelNumber; /*!< the channel number on the client for the currently selected channel group */
+    CPVRChannelNumber m_clientChannelNumber; /*!< the channel number on the client */
     std::string m_strClientChannelName; /*!< the name of this channel on the client */
     std::string
         m_strMimeType; /*!< the stream input type based mime type, see @ref https://www.iana.org/assignments/media-types/media-types.xhtml#video */
-    std::string m_strFileNameAndPath; /*!< the filename to be used by PVRManager to open and read the stream */
     int m_iClientEncryptionSystem = -1; /*!< the encryption system used by this channel. 0 for FreeToAir, -1 for unknown */
     std::string m_strClientEncryptionName; /*!< the name of the encryption system used by this channel */
-    int m_iOrder = 0; /*!< the order from this channels currently selected group memeber */
+    int m_iClientOrder = 0; /*!< the order from this channels group member */
     //@}
 
     mutable CCriticalSection m_critSection;

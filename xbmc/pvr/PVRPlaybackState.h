@@ -20,6 +20,7 @@ namespace PVR
 {
 class CPVRChannel;
 class CPVRChannelGroup;
+class CPVRChannelGroupMember;
 class CPVREpgInfoTag;
 class CPVRRecording;
 
@@ -191,17 +192,32 @@ public:
   bool CanRecordOnPlayingChannel() const;
 
   /*!
-   * @brief Set the current playing group, used to load the right channel.
+   * @brief Set the active channel group.
    * @param group The new group.
    */
-  void SetPlayingGroup(const std::shared_ptr<CPVRChannelGroup>& group);
+  void SetActiveChannelGroup(const std::shared_ptr<CPVRChannelGroup>& group);
 
   /*!
-   * @brief Get the current playing group, used to load the right channel.
-   * @param bRadio True to get the current radio group, false to get the current TV group.
+   * @brief Get the active channel group.
+   * @param bRadio True to get the active radio group, false to get the active TV group.
    * @return The current group or the group containing all channels if it's not set.
    */
-  std::shared_ptr<CPVRChannelGroup> GetPlayingGroup(bool bRadio) const;
+  std::shared_ptr<CPVRChannelGroup> GetActiveChannelGroup(bool bRadio) const;
+
+  /*!
+   * @brief Get the last played channel group member.
+   * @param bRadio True to get the radio group member, false to get the TV group member.
+   * @return The last played group member or nullptr if it's not available.
+   */
+  std::shared_ptr<CPVRChannelGroupMember> GetLastPlayedChannelGroupMember(bool bRadio) const;
+
+  /*!
+   * @brief Get the channel group member that was played before the last played member.
+   * @param bRadio True to get the radio group member, false to get the TV group member.
+   * @return The previous played group member or nullptr if it's not available.
+   */
+  std::shared_ptr<CPVRChannelGroupMember> GetPreviousToLastPlayedChannelGroupMember(
+      bool bRadio) const;
 
   /*!
    * @brief Get current playback time for the given channel, taking timeshifting and playing
@@ -221,30 +237,40 @@ public:
   CDateTime GetChannelPlaybackTime(int iClientID, int iUniqueChannelID) const;
 
 private:
+  void ClearData();
+
   /*!
-   * @brief Set the playing group to the first group the channel is in if the given channel is not part of the current playing group
-   * @param channel The channel
+   * @brief Set the active group to the group of the supplied channel group member.
+   * @param channel The channel group member
    */
-  void SetPlayingGroup(const std::shared_ptr<CPVRChannel>& channel);
+  void SetActiveChannelGroup(const std::shared_ptr<CPVRChannelGroupMember>& channel);
 
   /*!
    * @brief Updates the last watched timestamps of the channel and group which are currently playing.
    * @param channel The channel which is updated
    * @param time The last watched time to set
    */
-  void UpdateLastWatched(const std::shared_ptr<CPVRChannel>& channel, const CDateTime& time);
+  void UpdateLastWatched(const std::shared_ptr<CPVRChannelGroupMember>& channel,
+                         const CDateTime& time);
 
   mutable CCriticalSection m_critSection;
 
-  std::shared_ptr<CPVRChannel> m_playingChannel;
+  std::shared_ptr<CPVRChannelGroupMember> m_playingChannel;
   std::shared_ptr<CPVRRecording> m_playingRecording;
   std::shared_ptr<CPVREpgInfoTag> m_playingEpgTag;
+  std::shared_ptr<CPVRChannelGroupMember> m_lastPlayedChannelTV;
+  std::shared_ptr<CPVRChannelGroupMember> m_lastPlayedChannelRadio;
+  std::shared_ptr<CPVRChannelGroupMember> m_previousToLastPlayedChannelTV;
+  std::shared_ptr<CPVRChannelGroupMember> m_previousToLastPlayedChannelRadio;
   std::string m_strPlayingClientName;
+  int m_playingGroupId = -1;
   int m_playingClientId = -1;
   int m_playingChannelUniqueId = -1;
   std::string m_strPlayingRecordingUniqueId;
   int m_playingEpgTagChannelUniqueId = -1;
   unsigned int m_playingEpgTagUniqueId = 0;
+  std::shared_ptr<CPVRChannelGroup> m_activeGroupTV;
+  std::shared_ptr<CPVRChannelGroup> m_activeGroupRadio;
 
   class CLastWatchedUpdateTimer;
   std::unique_ptr<CLastWatchedUpdateTimer> m_lastWatchedUpdateTimer;

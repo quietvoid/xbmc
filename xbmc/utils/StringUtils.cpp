@@ -336,24 +336,58 @@ wchar_t toupperUnicode(const wchar_t& c)
   return c;
 }
 
+template<typename Str, typename Fn>
+void transformString(const Str& input, Str& output, Fn fn)
+{
+  std::transform(input.begin(), input.end(), output.begin(), fn);
+}
+
+std::string StringUtils::ToUpper(const std::string& str)
+{
+  std::string result(str.size(), '\0');
+  transformString(str, result, ::toupper);
+  return result;
+}
+
+std::wstring StringUtils::ToUpper(const std::wstring& str)
+{
+  std::wstring result(str.size(), '\0');
+  transformString(str, result, toupperUnicode);
+  return result;
+}
+
 void StringUtils::ToUpper(std::string &str)
 {
-  std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+  transformString(str, str, ::toupper);
 }
 
 void StringUtils::ToUpper(std::wstring &str)
 {
-  transform(str.begin(), str.end(), str.begin(), toupperUnicode);
+  transformString(str, str, toupperUnicode);
+}
+
+std::string StringUtils::ToLower(const std::string& str)
+{
+  std::string result(str.size(), '\0');
+  transformString(str, result, ::tolower);
+  return result;
+}
+
+std::wstring StringUtils::ToLower(const std::wstring& str)
+{
+  std::wstring result(str.size(), '\0');
+  transformString(str, result, tolowerUnicode);
+  return result;
 }
 
 void StringUtils::ToLower(std::string &str)
 {
-  transform(str.begin(), str.end(), str.begin(), ::tolower);
+  transformString(str, str, ::tolower);
 }
 
 void StringUtils::ToLower(std::wstring &str)
 {
-  transform(str.begin(), str.end(), str.begin(), tolowerUnicode);
+  transformString(str, str, tolowerUnicode);
 }
 
 void StringUtils::ToCapitalize(std::string &str)
@@ -1072,10 +1106,10 @@ int64_t StringUtils::AlphaNumericCompare(const wchar_t* left, const wchar_t* rig
     // alphanumeric ascii, rather than some being mixed between the numbers and letters, and
     // above all other unicode letters, symbols and punctuation.
     // (Locale collation of these chars varies across platforms)
-    lsym = (lc >= 32 && lc < L'0') || (lc > L'9' && lc < L'A') || 
-           (lc > L'Z' && lc < L'a') || (lc > L'z' && lc < 128);
-    rsym = (rc >= 32 && rc < L'0') || (rc > L'9' && rc < L'A') || 
-           (rc > L'Z' && rc < L'a') || (rc > L'z' && rc < 128);
+    lsym = (lc >= 32 && lc < L'0') || (lc > L'9' && lc < L'A') || (lc > L'Z' && lc < L'a') ||
+           (lc > L'z' && lc < 128);
+    rsym = (rc >= 32 && rc < L'0') || (rc > L'9' && rc < L'A') || (rc > L'Z' && rc < L'a') ||
+           (rc > L'z' && rc < 128);
     if (lsym && !rsym)
       return -1;
     if (!lsym && rsym)
@@ -1086,7 +1120,7 @@ int64_t StringUtils::AlphaNumericCompare(const wchar_t* left, const wchar_t* rig
         return lc - rc;
       else
       { // Same symbol advance to next wchar
-        l++; 
+        l++;
         r++;
         continue;
       }
@@ -1393,13 +1427,13 @@ std::string StringUtils::SecondsToTimeString(long lSeconds, TIME_FORMAT format)
 
   std::string strHMS;
   if (format == TIME_FORMAT_SECS)
-    strHMS = StringUtils::Format("%i", lSeconds);
+    strHMS = std::to_string(lSeconds);
   else if (format == TIME_FORMAT_MINS)
-    strHMS = StringUtils::Format("%i", lrintf(static_cast<float>(lSeconds) / 60.0f));
+    strHMS = std::to_string(lrintf(static_cast<float>(lSeconds) / 60.0f));
   else if (format == TIME_FORMAT_HOURS)
-    strHMS = StringUtils::Format("%i", lrintf(static_cast<float>(lSeconds) / 3600.0f));
+    strHMS = std::to_string(lrintf(static_cast<float>(lSeconds) / 3600.0f));
   else if (format & TIME_FORMAT_M)
-    strHMS += StringUtils::Format("%i", lSeconds % 3600 / 60);
+    strHMS += std::to_string(lSeconds % 3600 / 60);
   else
   {
     int hh = lSeconds / 3600;
@@ -1410,13 +1444,13 @@ std::string StringUtils::SecondsToTimeString(long lSeconds, TIME_FORMAT format)
     if (format == TIME_FORMAT_GUESS)
       format = (hh >= 1) ? TIME_FORMAT_HH_MM_SS : TIME_FORMAT_MM_SS;
     if (format & TIME_FORMAT_HH)
-      strHMS += StringUtils::Format("%2.2i", hh);
+      strHMS += StringUtils::Format("{:02}", hh);
     else if (format & TIME_FORMAT_H)
-      strHMS += StringUtils::Format("%i", hh);
+      strHMS += std::to_string(hh);
     if (format & TIME_FORMAT_MM)
-      strHMS += StringUtils::Format(strHMS.empty() ? "%2.2i" : ":%2.2i", mm);
+      strHMS += StringUtils::Format(strHMS.empty() ? "{:02}" : ":{:02}", mm);
     if (format & TIME_FORMAT_SS)
-      strHMS += StringUtils::Format(strHMS.empty() ? "%2.2i" : ":%2.2i", ss);
+      strHMS += StringUtils::Format(strHMS.empty() ? "{:02}" : ":{:02}", ss);
   }
 
   if (isNegative)
@@ -1497,18 +1531,18 @@ std::string StringUtils::SizeToString(int64_t size)
   }
 
   if (!i)
-    strLabel = StringUtils::Format("%.lf B", s);
+    strLabel = StringUtils::Format("{:.2f} B", s);
   else if (i == ARRAY_SIZE(prefixes))
   {
     if (s >= 1000.0)
-      strLabel = StringUtils::Format(">999.99 %cB", prefixes[i - 1]);
+      strLabel = StringUtils::Format(">999.99 {}B", prefixes[i - 1]);
     else
-      strLabel = StringUtils::Format("%.2lf %cB", s, prefixes[i - 1]);
+      strLabel = StringUtils::Format("{:.2f} {}B", s, prefixes[i - 1]);
   }
   else if (s >= 100.0)
-    strLabel = StringUtils::Format("%.1lf %cB", s, prefixes[i]);
+    strLabel = StringUtils::Format("{:.1f} {}B", s, prefixes[i]);
   else
-    strLabel = StringUtils::Format("%.2lf %cB", s, prefixes[i]);
+    strLabel = StringUtils::Format("{:.2f} {}B", s, prefixes[i]);
 
   return strLabel;
 }
@@ -1792,7 +1826,7 @@ std::string StringUtils::FormatFileSize(uint64_t bytes)
 {
   const std::array<std::string, 6> units{{"B", "kB", "MB", "GB", "TB", "PB"}};
   if (bytes < 1000)
-    return Format("%" PRIu64 "B", bytes);
+    return Format("{}B", bytes);
 
   size_t i = 0;
   double value = static_cast<double>(bytes);
@@ -1802,11 +1836,15 @@ std::string StringUtils::FormatFileSize(uint64_t bytes)
     value /= 1024.0;
   }
   unsigned int decimals = value < 9.995 ? 2 : (value < 99.95 ? 1 : 0);
-  auto frmt = "%." + Format("%u", decimals) + "f%s";
-  return Format(frmt.c_str(), value, units[i].c_str());
+  return Format("{:.{}f}{}", value, decimals, units[i]);
 }
 
 const std::locale& StringUtils::GetOriginalLocale() noexcept
 {
   return g_langInfo.GetOriginalLocale();
+}
+
+std::string StringUtils::CreateFromCString(const char* cstr)
+{
+  return cstr != nullptr ? std::string(cstr) : std::string();
 }

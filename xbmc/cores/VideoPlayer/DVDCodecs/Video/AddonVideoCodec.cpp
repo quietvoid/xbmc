@@ -32,7 +32,8 @@ CAddonVideoCodec::CAddonVideoCodec(CProcessInfo& processInfo,
   m_struct.toKodi->release_frame_buffer = release_frame_buffer;
   if (CreateInstance(&m_struct) != ADDON_STATUS_OK || !m_struct.toAddon->open)
   {
-    CLog::Log(LOGERROR, "CInputStreamAddon: Failed to create add-on instance for '%s'", addonInfo->ID().c_str());
+    CLog::Log(LOGERROR, "CInputStreamAddon: Failed to create add-on instance for '{}'",
+              addonInfo->ID());
     return;
   }
 }
@@ -256,7 +257,7 @@ CDVDVideoCodec::VCReturn CAddonVideoCodec::GetPicture(VideoPicture* pVideoPictur
 
     pVideoPicture->iDisplayWidth = pVideoPicture->iWidth;
     pVideoPicture->iDisplayHeight = pVideoPicture->iHeight;
-    if (m_displayAspect > 0.0)
+    if (m_displayAspect > 0.0f)
     {
       pVideoPicture->iDisplayWidth = ((int)lrint(pVideoPicture->iHeight * m_displayAspect)) & ~3;
       if (pVideoPicture->iDisplayWidth > pVideoPicture->iWidth)

@@ -18,10 +18,9 @@
 #include "utils/StringUtils.h"
 
 static const SliderAction actions[] = {
-  {"seek",     "PlayerControl(SeekPercentage(%2f))", PLAYER_PROGRESS,                 false},
-  {"pvr.seek", "PVR.SeekPercentage(%2f)",            PVR_TIMESHIFT_PROGRESS_PLAY_POS, false},
-  {"volume",   "SetVolume(%2f)",                     PLAYER_VOLUME,                   true}
- };
+    {"seek", "PlayerControl(SeekPercentage({:2f}))", PLAYER_PROGRESS, false},
+    {"pvr.seek", "PVR.SeekPercentage({:2f})", PVR_TIMESHIFT_PROGRESS_PLAY_POS, false},
+    {"volume", "SetVolume({:2f})", PLAYER_VOLUME, true}};
 
 CGUISliderControl::CGUISliderControl(int parentID,
                                      int controlID,
@@ -348,7 +347,7 @@ void CGUISliderControl::Move(int iNumSteps)
 void CGUISliderControl::SendClick()
 {
   float percent = 100*GetProportion();
-  SEND_CLICK_MESSAGE(GetID(), GetParentID(), MathUtils::round_int(percent));
+  SEND_CLICK_MESSAGE(GetID(), GetParentID(), MathUtils::round_int(static_cast<double>(percent)));
   if (m_action && (!m_dragging || m_action->fireOnDrag))
   {
     std::string action = StringUtils::Format(m_action->formatString, percent);
@@ -456,7 +455,7 @@ int CGUISliderControl::GetIntValue(RangeSelector selector /* = RangeSelectorLowe
   else if (m_iType == SLIDER_CONTROL_TYPE_INT)
     return m_intValues[selector];
   else
-    return MathUtils::round_int(m_percentValues[selector]);
+    return MathUtils::round_int(static_cast<double>(m_percentValues[selector]));
 }
 
 void CGUISliderControl::SetFloatValue(float fValue, RangeSelector selector /* = RangeSelectorLower */, bool updateCurrent /* = false */)
@@ -717,23 +716,24 @@ std::string CGUISliderControl::GetDescription() const
   if (m_iType == SLIDER_CONTROL_TYPE_FLOAT)
   {
     if (m_rangeSelection)
-      description = StringUtils::Format("[%2.2f, %2.2f]", m_floatValues[0], m_floatValues[1]);
+      description = StringUtils::Format("[{:2.2f}, {:2.2f}]", m_floatValues[0], m_floatValues[1]);
     else
-      description = StringUtils::Format("%2.2f", m_floatValues[0]);
+      description = StringUtils::Format("{:2.2f}", m_floatValues[0]);
   }
   else if (m_iType == SLIDER_CONTROL_TYPE_INT)
   {
     if (m_rangeSelection)
-      description = StringUtils::Format("[%i, %i]", m_intValues[0], m_intValues[1]);
+      description = StringUtils::Format("[{}, {}]", m_intValues[0], m_intValues[1]);
     else
-      description = StringUtils::Format("%i", m_intValues[0]);
+      description = std::to_string(m_intValues[0]);
   }
   else
   {
     if (m_rangeSelection)
-      description = StringUtils::Format("[%i%%, %i%%]", MathUtils::round_int(m_percentValues[0]), MathUtils::round_int(m_percentValues[1]));
+      description = StringUtils::Format("[{}%, {}%]", MathUtils::round_int(static_cast<double>(m_percentValues[0])),
+                                        MathUtils::round_int(static_cast<double>(m_percentValues[1])));
     else
-      description = StringUtils::Format("%i%%", MathUtils::round_int(m_percentValues[0]));
+      description = StringUtils::Format("{}%", MathUtils::round_int(static_cast<double>(m_percentValues[0])));
   }
   return description;
 }

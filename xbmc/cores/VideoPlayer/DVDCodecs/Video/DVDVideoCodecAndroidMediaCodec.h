@@ -118,7 +118,7 @@ public:
   ~CDVDVideoCodecAndroidMediaCodec() override;
 
   // registration
-  static CDVDVideoCodec* Create(CProcessInfo& processInfo);
+  static std::unique_ptr<CDVDVideoCodec> Create(CProcessInfo& processInfo);
   static bool Register();
 
   // required overrides
@@ -175,7 +175,7 @@ protected:
 
   static std::atomic<bool> m_InstanceGuard;
 
-  CBitstreamConverter* m_bitstream;
+  std::unique_ptr<CBitstreamConverter> m_bitstream;
   VideoPicture m_videobuffer;
 
   int m_indexInputBuffer;

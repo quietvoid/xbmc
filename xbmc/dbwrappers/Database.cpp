@@ -144,7 +144,7 @@ CDatabase::DatasetLayout::DatasetLayout(size_t totalfields)
 }
 
 void CDatabase::DatasetLayout::SetField(int fieldNo, const std::string &strField, bool bOutput /*= false*/)
-{  
+{
   if (fieldNo >= 0 && fieldNo < static_cast<int>(m_fields.size()))
   {
     m_fields[fieldNo].strField = strField;
@@ -278,7 +278,7 @@ std::string CDatabase::GetSingleValue(const std::string &query, std::unique_ptr<
   }
   catch(...)
   {
-    CLog::Log(LOGERROR, "%s - failed on query '%s'", __FUNCTION__, query.c_str());
+    CLog::Log(LOGERROR, "{} - failed on query '{}'", __FUNCTION__, query);
   }
   return ret;
 }
@@ -314,7 +314,7 @@ int CDatabase::GetSingleValueInt(const std::string& query, std::unique_ptr<Datas
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s - failed on query '%s'", __FUNCTION__, query.c_str());
+    CLog::Log(LOGERROR, "{} - failed on query '{}'", __FUNCTION__, query);
   }
   return ret;
 }
@@ -384,8 +384,7 @@ bool CDatabase::ExecuteQuery(const std::string &strQuery)
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s - failed to execute query '%s'",
-        __FUNCTION__, strQuery.c_str());
+    CLog::Log(LOGERROR, "{} - failed to execute query '{}'", __FUNCTION__, strQuery);
   }
 
   return bReturn;
@@ -408,8 +407,7 @@ bool CDatabase::ResultQuery(const std::string &strQuery)
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s - failed to execute query '%s'",
-        __FUNCTION__, strQuery.c_str());
+    CLog::Log(LOGERROR, "{} - failed to execute query '{}'", __FUNCTION__, strQuery);
   }
 
   return bReturn;
@@ -451,8 +449,7 @@ bool CDatabase::CommitInsertQueries()
     catch(...)
     {
       bReturn = false;
-      CLog::Log(LOGERROR, "%s - failed to execute queries",
-          __FUNCTION__);
+      CLog::Log(LOGERROR, "{} - failed to execute queries", __FUNCTION__);
     }
   }
 
@@ -490,7 +487,7 @@ bool CDatabase::CommitDeleteQueries()
     catch (...)
     {
       bReturn = false;
-      CLog::Log(LOGERROR, "%s - failed to execute queries", __FUNCTION__);
+      CLog::Log(LOGERROR, "{} - failed to execute queries", __FUNCTION__);
     }
   }
 
@@ -524,7 +521,7 @@ bool CDatabase::Open(const DatabaseSettings &settings)
   InitSettings(dbSettings);
 
   std::string dbName = dbSettings.name;
-  dbName += StringUtils::Format("%d", GetSchemaVersion());
+  dbName += std::to_string(GetSchemaVersion());
   return Connect(dbName, dbSettings, false);
 }
 
@@ -583,7 +580,7 @@ bool CDatabase::Connect(const std::string &dbName, const DatabaseSettings &dbSet
 #endif
   else
   {
-    CLog::Log(LOGERROR, "Unable to determine database type: %s", dbSettings.type.c_str());
+    CLog::Log(LOGERROR, "Unable to determine database type: {}", dbSettings.type);
     return false;
   }
 
@@ -647,7 +644,7 @@ bool CDatabase::Connect(const std::string &dbName, const DatabaseSettings &dbSet
   }
   catch (DbErrors &error)
   {
-    CLog::Log(LOGERROR, "%s failed with '%s'", __FUNCTION__, error.getMsg());
+    CLog::Log(LOGERROR, "{} failed with '{}'", __FUNCTION__, error.getMsg());
     m_openCount = 1; // set to open so we can execute Close()
     Close();
     return false;
@@ -726,7 +723,7 @@ bool CDatabase::Compress(bool bForce /* =true */)
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s - Compressing the database failed", __FUNCTION__);
+    CLog::Log(LOGERROR, "{} - Compressing the database failed", __FUNCTION__);
     return false;
   }
   return true;
@@ -793,7 +790,7 @@ bool CDatabase::CreateDatabase()
   }
   catch (...)
   {
-    CLog::Log(LOGERROR, "%s unable to create database:%i", __FUNCTION__, (int)GetLastError());
+    CLog::Log(LOGERROR, "{} unable to create database:{}", __FUNCTION__, (int)GetLastError());
     RollbackTransaction();
     return false;
   }

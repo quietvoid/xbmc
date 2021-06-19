@@ -249,14 +249,18 @@ bool CPVRGUIActionListener::OnAction(const CAction& action)
       int iChannelNumber = static_cast<int>(action.GetAmount(0));
       int iSubChannelNumber = static_cast<int>(action.GetAmount(1));
 
-      const std::shared_ptr<CPVRChannel> currentChannel = CServiceBroker::GetPVRManager().PlaybackState()->GetPlayingChannel();
-      const std::shared_ptr<CPVRChannelGroup> selectedGroup = CServiceBroker::GetPVRManager().ChannelGroups()->Get(currentChannel->IsRadio())->GetSelectedGroup();
-      const std::shared_ptr<CPVRChannel> channel = selectedGroup->GetByChannelNumber(CPVRChannelNumber(iChannelNumber, iSubChannelNumber));
+      const std::shared_ptr<CPVRPlaybackState> playbackState =
+          CServiceBroker::GetPVRManager().PlaybackState();
+      const std::shared_ptr<CPVRChannelGroup> activeGroup =
+          playbackState->GetActiveChannelGroup(playbackState->IsPlayingRadio());
+      const std::shared_ptr<CPVRChannelGroupMember> groupMember =
+          activeGroup->GetByChannelNumber(CPVRChannelNumber(iChannelNumber, iSubChannelNumber));
 
-      if (!channel)
+      if (!groupMember)
         return false;
 
-      CServiceBroker::GetPVRManager().GUIActions()->SwitchToChannel(std::make_shared<CFileItem>(channel), false);
+      CServiceBroker::GetPVRManager().GUIActions()->SwitchToChannel(
+          std::make_shared<CFileItem>(groupMember), false);
       return true;
     }
 

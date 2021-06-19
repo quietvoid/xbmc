@@ -76,7 +76,7 @@ static bool FindDeviceWait(CUPnP* upnp, const char* uuid, PLT_DeviceDataReferenc
     // (and wait for it to respond for 5 secs if we're just starting upnp client)
     NPT_TimeStamp watchdog;
     NPT_System::GetCurrentTimeStamp(watchdog);
-    watchdog += 5.f;
+    watchdog += 5.0;
 
     for (;;) {
         if (NPT_SUCCEEDED(upnp->m_MediaBrowser->FindServer(uuid, device)) && !device.IsNull())
@@ -152,18 +152,18 @@ bool CUPnPDirectory::GetResource(const CURL& path, CFileItem &item)
 
     PLT_DeviceDataReference device;
     if(!FindDeviceWait(upnp, uuid.c_str(), device)) {
-        CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - unable to find uuid %s", uuid.c_str());
-        return false;
+      CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - unable to find uuid {}", uuid);
+      return false;
     }
 
     PLT_MediaObjectListReference list;
     if (NPT_FAILED(upnp->m_MediaBrowser->BrowseSync(device, object.c_str(), list, true))) {
-        CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - unable to find object %s", object.c_str());
-        return false;
+      CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - unable to find object {}", object);
+      return false;
     }
 
     if (list.IsNull() || !list->GetItemCount()) {
-      CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - no items returned for object %s", object.c_str());
+      CLog::Log(LOGERROR, "CUPnPDirectory::GetResource - no items returned for object {}", object);
       return false;
     }
 

@@ -8,12 +8,12 @@
 
 #include "GameLoop.h"
 
-#include "threads/SystemClock.h"
-
+#include <chrono>
 #include <cmath>
 
 using namespace KODI;
 using namespace RETRO;
+using namespace std::chrono_literals;
 
 #define DEFAULT_FPS 60 // In case fps is 0 (shouldn't happen)
 #define FOREVER_MS (7 * 24 * 60 * 60 * 1000) // 1 week is large enough
@@ -64,7 +64,7 @@ void CGameLoop::Process(void)
     if (m_speedFactor == 0.0)
     {
       m_lastFrameMs = 0.0;
-      m_sleepEvent.WaitMSec(5000);
+      m_sleepEvent.Wait(5000ms);
     }
     else
     {
@@ -90,7 +90,7 @@ void CGameLoop::Process(void)
       // Sleep at least 1 ms to avoid sleeping forever
       while (sleepTimeMs > 1.0)
       {
-        m_sleepEvent.WaitMSec(static_cast<unsigned int>(sleepTimeMs));
+        m_sleepEvent.Wait(std::chrono::milliseconds(static_cast<unsigned int>(sleepTimeMs)));
 
         if (m_bStop)
           break;
@@ -129,5 +129,7 @@ double CGameLoop::SleepTimeMs() const
 
 double CGameLoop::NowMs() const
 {
-  return static_cast<double>(XbmcThreads::SystemClockMillis());
+  return std::chrono::duration<double, std::milli>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
 }

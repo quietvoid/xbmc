@@ -416,7 +416,7 @@ protected:
   void UpdateCorrection(DemuxPacket* pkt, double correction);
   void UpdateTimestamps(CCurrentStream& current, DemuxPacket* pPacket);
   IDVDStreamPlayer* GetStreamPlayer(unsigned int player);
-  void SendPlayerMessage(CDVDMsg* pMsg, unsigned int target);
+  void SendPlayerMessage(std::shared_ptr<CDVDMsg> pMsg, unsigned int target);
 
   bool ReadPacket(DemuxPacket*& packet, CDemuxStream*& stream);
   bool IsValidStream(CCurrentStream& stream);
@@ -499,10 +499,10 @@ protected:
   CDVDOverlayContainer m_overlayContainer;
 
   std::shared_ptr<CDVDInputStream> m_pInputStream;
-  CDVDDemux* m_pDemuxer;
+  std::unique_ptr<CDVDDemux> m_pDemuxer;
   std::shared_ptr<CDVDDemux> m_pSubtitleDemuxer;
   std::unordered_map<int64_t, std::shared_ptr<CDVDDemux>> m_subtitleDemuxerMap;
-  CDVDDemuxCC* m_pCCDemuxer;
+  std::unique_ptr<CDVDDemuxCC> m_pCCDemuxer;
 
   CRenderManager m_renderManager;
 

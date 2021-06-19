@@ -61,7 +61,7 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
 
   if (!pCodec)
   {
-    CLog::Log(LOGDEBUG,"CDVDAudioCodecFFmpeg::Open() Unable to find codec %d", hints.codec);
+    CLog::Log(LOGDEBUG, "CDVDAudioCodecFFmpeg::Open() Unable to find codec {}", hints.codec);
     return false;
   }
 
@@ -78,6 +78,7 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
   m_matrixEncoding = AV_MATRIX_ENCODING_NONE;
   m_channels = 0;
   m_pCodecContext->channels = hints.channels;
+  m_hint_layout = hints.channellayout;
   m_pCodecContext->sample_rate = hints.samplerate;
   m_pCodecContext->block_align = hints.blockalign;
   m_pCodecContext->bit_rate = hints.bitrate;
@@ -97,8 +98,9 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
   }
 
   float applyDrc = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_audioApplyDrc;
-  if (applyDrc >= 0.0)
-    av_opt_set_double(m_pCodecContext, "drc_scale", applyDrc, AV_OPT_SEARCH_CHILDREN);
+  if (applyDrc >= 0.0f)
+    av_opt_set_double(m_pCodecContext, "drc_scale", static_cast<double>(applyDrc),
+                      AV_OPT_SEARCH_CHILDREN);
 
   if (avcodec_open2(m_pCodecContext, pCodec, NULL) < 0)
   {
@@ -120,7 +122,7 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
 
   m_codecName = "ff-" + std::string(m_pCodecContext->codec->name);
 
-  CLog::Log(LOGINFO, "CDVDAudioCodecFFmpeg::Open() Successful opened audio decoder %s",
+  CLog::Log(LOGINFO, "CDVDAudioCodecFFmpeg::Open() Successful opened audio decoder {}",
             m_pCodecContext->codec->name);
 
   return true;
@@ -357,8 +359,17 @@ void CDVDAudioCodecFFmpeg::BuildChannelMap()
     layout = m_pCodecContext->channel_layout;
   else
   {
-    CLog::Log(LOGINFO, "CDVDAudioCodecFFmpeg::GetChannelMap - FFmpeg reported %d channels, but the layout contains %d ignoring", m_pCodecContext->channels, bits);
-    layout = av_get_default_channel_layout(m_pCodecContext->channels);
+    CLog::Log(LOGINFO,
+              "CDVDAudioCodecFFmpeg::GetChannelMap - FFmpeg reported {} channels, but the layout "
+              "contains {} - trying hints",
+              m_pCodecContext->channels, bits);
+    if (static_cast<int>(count_bits(m_hint_layout)) == m_pCodecContext->channels)
+      layout = m_hint_layout;
+    else
+    {
+      layout = av_get_default_channel_layout(m_pCodecContext->channels);
+      CLog::Log(LOGINFO, "Using default layout...");
+    }
   }
 
   m_channelLayout.Reset();

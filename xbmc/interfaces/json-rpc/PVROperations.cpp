@@ -13,6 +13,7 @@
 #include "pvr/PVRPlaybackState.h"
 #include "pvr/addons/PVRClients.h"
 #include "pvr/channels/PVRChannel.h"
+#include "pvr/channels/PVRChannelGroupMember.h"
 #include "pvr/channels/PVRChannelGroups.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
 #include "pvr/epg/Epg.h"
@@ -117,10 +118,10 @@ JSONRPC_STATUS CPVROperations::GetChannels(const std::string &method, ITransport
     return InvalidParams;
 
   CFileItemList channels;
-  const std::vector<std::shared_ptr<PVRChannelGroupMember>> groupMembers = channelGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
+  const auto groupMembers = channelGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
   for (const auto& groupMember : groupMembers)
   {
-    channels.Add(std::make_shared<CFileItem>(groupMember->channel));
+    channels.Add(std::make_shared<CFileItem>(groupMember));
   }
 
   HandleFileItemList("channelid", false, "channels", channels, parameterObject, result, true);
@@ -137,11 +138,18 @@ JSONRPC_STATUS CPVROperations::GetChannelDetails(const std::string &method, ITra
   if (!channelGroupContainer)
     return FailedToExecute;
 
-  std::shared_ptr<CPVRChannel> channel = channelGroupContainer->GetChannelById((int)parameterObject["channelid"].asInteger());
+  std::shared_ptr<CPVRChannel> channel = channelGroupContainer->GetChannelById(
+      static_cast<int>(parameterObject["channelid"].asInteger()));
   if (channel == NULL)
     return InvalidParams;
 
-  HandleFileItem("channelid", false, "channeldetails", CFileItemPtr(new CFileItem(channel)), parameterObject, parameterObject["properties"], result, false);
+  const std::shared_ptr<CPVRChannelGroupMember> groupMember =
+      CServiceBroker::GetPVRManager().GUIActions()->GetChannelGroupMember(channel);
+  if (!groupMember)
+    return InvalidParams;
+
+  HandleFileItem("channelid", false, "channeldetails", std::make_shared<CFileItem>(groupMember),
+                 parameterObject, parameterObject["properties"], result, false);
 
   return OK;
 }
@@ -338,10 +346,10 @@ void CPVROperations::FillChannelGroupDetails(const std::shared_ptr<CPVRChannelGr
   else
   {
     CFileItemList channels;
-    const std::vector<std::shared_ptr<PVRChannelGroupMember>> groupMembers = channelGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
+    const auto groupMembers = channelGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
     for (const auto& groupMember : groupMembers)
     {
-      channels.Add(std::make_shared<CFileItem>(groupMember->channel));
+      channels.Add(std::make_shared<CFileItem>(groupMember));
     }
 
     object["channels"] = CVariant(CVariant::VariantTypeArray);

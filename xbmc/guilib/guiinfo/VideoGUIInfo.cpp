@@ -44,7 +44,8 @@ int CVideoGUIInfo::GetPercentPlayed(const CVideoInfoTag* tag) const
 {
   CBookmark bookmark = tag->GetResumePoint();
   if (bookmark.IsPartWay())
-    return std::lrintf(static_cast<float>(bookmark.timeInSeconds) / bookmark.totalTimeInSeconds * 100.0f);
+    return std::lrintf(static_cast<float>(bookmark.timeInSeconds) /
+                       static_cast<float>(bookmark.totalTimeInSeconds) * 100.0f);
   else
     return 0;
 }
@@ -57,7 +58,7 @@ bool CVideoGUIInfo::InitCurrentItem(CFileItem *item)
     if (item->IsInternetStream() && g_application.GetAppPlayer().IsPlayingAudio())
       return false;
 
-    CLog::Log(LOGDEBUG,"CVideoGUIInfo::InitCurrentItem(%s)", CURL::GetRedacted(item->GetPath()).c_str());
+    CLog::Log(LOGDEBUG, "CVideoGUIInfo::InitCurrentItem({})", CURL::GetRedacted(item->GetPath()));
 
     // Find a thumb for this file.
     if (!item->HasArt("thumb"))
@@ -71,7 +72,8 @@ bool CVideoGUIInfo::InitCurrentItem(CFileItem *item)
     {
       if (!g_application.m_strPlayListFile.empty())
       {
-        CLog::Log(LOGDEBUG,"Streaming media detected... using %s to find a thumb", g_application.m_strPlayListFile.c_str());
+        CLog::Log(LOGDEBUG, "Streaming media detected... using {} to find a thumb",
+                  g_application.m_strPlayListFile);
         CFileItem thumbItem(g_application.m_strPlayListFile,false);
 
         CVideoThumbLoader loader;
@@ -140,7 +142,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_DBID:
         if (tag->m_iDbId > -1)
         {
-          value = StringUtils::Format("%i", tag->m_iDbId);
+          value = std::to_string(tag->m_iDbId);
           return true;
         }
         break;
@@ -148,7 +150,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_TVSHOWDBID:
         if (tag->m_iIdShow > -1)
         {
-          value = StringUtils::Format("%i", tag->m_iIdShow);
+          value = std::to_string(tag->m_iIdShow);
           return true;
         }
         break;
@@ -177,9 +179,9 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
           if (rating.rating > 0.f && rating.votes == 0)
             value = StringUtils::FormatNumber(rating.rating);
           else if (rating.votes > 0)
-            value = StringUtils::Format(g_localizeStrings.Get(20350).c_str(),
-                                        StringUtils::FormatNumber(rating.rating).c_str(),
-                                        StringUtils::FormatNumber(rating.votes).c_str());
+            value = StringUtils::Format(g_localizeStrings.Get(20350),
+                                        StringUtils::FormatNumber(rating.rating),
+                                        StringUtils::FormatNumber(rating.votes));
           else
             break;
           return true;
@@ -190,7 +192,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_USER_RATING:
         if (tag->m_iUserRating > 0)
         {
-          value = StringUtils::Format("%i", tag->m_iUserRating);
+          value = std::to_string(tag->m_iUserRating);
           return true;
         }
         break;
@@ -202,7 +204,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_YEAR:
         if (tag->HasYear())
         {
-          value = StringUtils::Format("%i", tag->GetYear());
+          value = std::to_string(tag->GetYear());
           return true;
         }
         break;
@@ -244,7 +246,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
 
         if (iEpisode >= 0)
         {
-          value = StringUtils::Format("%d", iEpisode);
+          value = std::to_string(iEpisode);
           return true;
         }
         break;
@@ -253,7 +255,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_SEASON:
         if (tag->m_iSeason >= 0)
         {
-          value = StringUtils::Format("%d", tag->m_iSeason);
+          value = std::to_string(tag->m_iSeason);
           return true;
         }
         break;
@@ -277,7 +279,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_TOP250:
         if (tag->m_iTop250 > 0)
         {
-          value = StringUtils::Format("%i", tag->m_iTop250);
+          value = std::to_string(tag->m_iTop250);
           return true;
         }
         break;
@@ -320,7 +322,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_PLAYCOUNT:
         if (tag->GetPlayCount() > 0)
         {
-          value = StringUtils::Format("%i", tag->GetPlayCount());
+          value = std::to_string(tag->GetPlayCount());
           return true;
         }
         break;
@@ -341,14 +343,15 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_TRACKNUMBER:
         if (tag->m_iTrack > -1 )
         {
-          value = StringUtils::Format("%i", tag->m_iTrack);
+          value = std::to_string(tag->m_iTrack);
           return true;
         }
         break;
       case LISTITEM_PLOT:
         {
-          std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>( 
-            CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(CSettings::SETTING_VIDEOLIBRARY_SHOWUNWATCHEDPLOTS)));
+          std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>(
+              CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(
+                  CSettings::SETTING_VIDEOLIBRARY_SHOWUNWATCHEDPLOTS)));
           if (tag->m_type != MediaTypeTvShow && tag->m_type != MediaTypeVideoCollection &&
               tag->GetPlayCount() == 0 && setting &&
               ((tag->m_type == MediaTypeMovie &&
@@ -378,7 +381,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_SETID:
         if (tag->m_set.id > 0)
         {
-          value = StringUtils::Format("%d", tag->m_set.id);
+          value = std::to_string(tag->m_set.id);
           return true;
         }
         break;
@@ -407,12 +410,12 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_APPEARANCES:
         if (tag->m_relevance > -1)
         {
-          value = StringUtils::Format("%i", tag->m_relevance);
+          value = std::to_string(tag->m_relevance);
           return true;
         }
         break;
       case LISTITEM_PERCENT_PLAYED:
-        value = StringUtils::Format("%d", GetPercentPlayed(tag));
+        value = std::to_string(GetPercentPlayed(tag));
         return true;
       case LISTITEM_VIDEO_CODEC:
         value = tag->m_streamDetails.GetVideoCodec();
@@ -431,7 +434,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
         int iChannels = tag->m_streamDetails.GetAudioChannels();
         if (iChannels > 0)
         {
-          value = StringUtils::Format("%i", iChannels);
+          value = std::to_string(iChannels);
           return true;
         }
         break;
@@ -558,7 +561,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       int iChannels = m_audioInfo.channels;
       if (iChannels > 0)
       {
-        value = StringUtils::Format("%i", iChannels);
+        value = std::to_string(iChannels);
         return true;
       }
       break;
@@ -568,7 +571,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       int iBitrate = m_audioInfo.bitrate;
       if (iBitrate > 0)
       {
-        value = StringUtils::Format("%li", std::lrint(static_cast<double>(iBitrate) / 1000.0));
+        value = std::to_string(std::lrint(static_cast<double>(iBitrate) / 1000.0));
         return true;
       }
       break;
@@ -578,7 +581,7 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       int iBitrate = m_videoInfo.bitrate;
       if (iBitrate > 0)
       {
-        value = StringUtils::Format("%li", std::lrint(static_cast<double>(iBitrate) / 1000.0));
+        value = std::to_string(std::lrint(static_cast<double>(iBitrate) / 1000.0));
         return true;
       }
       break;
@@ -621,7 +624,7 @@ bool CVideoGUIInfo::GetPlaylistInfo(std::string& value, const CGUIInfo& info) co
   }
   if (info.m_info == VIDEOPLAYER_PLAYLISTPOS)
   {
-    value = StringUtils::Format("%i", index + 1);
+    value = std::to_string(index + 1);
     return true;
   }
   else if (info.m_info == VIDEOPLAYER_COVER)

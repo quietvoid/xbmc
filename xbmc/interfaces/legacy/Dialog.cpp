@@ -42,12 +42,15 @@ namespace XBMCAddon
   {
     Dialog::~Dialog() = default;
 
-    bool Dialog::yesno(const String& heading, const String& message,
+    bool Dialog::yesno(const String& heading,
+                       const String& message,
                        const String& nolabel,
                        const String& yeslabel,
-                       int autoclose)
+                       int autoclose,
+                       int defaultbutton)
     {
-      return yesNoCustomInternal(heading, message, nolabel, yeslabel, emptyString, autoclose) == 1;
+      return yesNoCustomInternal(heading, message, nolabel, yeslabel, emptyString, autoclose,
+                                 defaultbutton) == 1;
     }
 
     int Dialog::yesnocustom(const String& heading,
@@ -55,9 +58,11 @@ namespace XBMCAddon
                             const String& customlabel,
                             const String& nolabel,
                             const String& yeslabel,
-                            int autoclose)
+                            int autoclose,
+                            int defaultbutton)
     {
-      return yesNoCustomInternal(heading, message, nolabel, yeslabel, customlabel, autoclose);
+      return yesNoCustomInternal(heading, message, nolabel, yeslabel, customlabel, autoclose,
+                                 defaultbutton);
     }
 
     int Dialog::yesNoCustomInternal(const String& heading,
@@ -65,7 +70,8 @@ namespace XBMCAddon
                                     const String& nolabel,
                                     const String& yeslabel,
                                     const String& customlabel,
-                                    int autoclose)
+                                    int autoclose,
+                                    int defaultbutton)
     {
       DelayedCallGuard dcguard(languageHook);
       CGUIDialogYesNo* pDialog =
@@ -75,7 +81,8 @@ namespace XBMCAddon
         throw WindowException("Error: Window is null");
 
       return pDialog->ShowAndGetInput(CVariant{heading}, CVariant{message}, CVariant{nolabel},
-                                      CVariant{yeslabel}, CVariant{customlabel}, autoclose);
+                                      CVariant{yeslabel}, CVariant{customlabel}, autoclose,
+                                      defaultbutton);
     }
 
     bool Dialog::info(const ListItem* item)
@@ -293,7 +300,8 @@ namespace XBMCAddon
             timedate.year = atoi(sDefault.substr(sDefault.size() - 4).c_str());
           }
           if (CGUIDialogNumeric::ShowAndGetDate(timedate, heading))
-            value = StringUtils::Format("%2d/%2d/%4d", timedate.day, timedate.month, timedate.year);
+            value =
+                StringUtils::Format("{:2}/{:2}/{:4}", timedate.day, timedate.month, timedate.year);
           else
             return emptyString;
         }
@@ -306,7 +314,7 @@ namespace XBMCAddon
             timedate.minute = atoi(sDefault.substr(3, 2).c_str());
           }
           if (CGUIDialogNumeric::ShowAndGetTime(timedate, heading))
-            value = StringUtils::Format("%2d:%02d", timedate.hour, timedate.minute);
+            value = StringUtils::Format("{:2}:{:02}", timedate.hour, timedate.minute);
           else
             return emptyString;
         }
@@ -386,8 +394,8 @@ namespace XBMCAddon
               timedate.year = atoi(sDefault.substr(sDefault.size() - 4).c_str());
             }
             if (CGUIDialogNumeric::ShowAndGetDate(timedate, heading))
-              value =
-                  StringUtils::Format("%2d/%2d/%4d", timedate.day, timedate.month, timedate.year);
+              value = StringUtils::Format("{:2}/{:2}/{:4}", timedate.day, timedate.month,
+                                          timedate.year);
             else
               value = emptyString;
           }
@@ -401,7 +409,7 @@ namespace XBMCAddon
               timedate.minute = atoi(sDefault.substr(3, 2).c_str());
             }
             if (CGUIDialogNumeric::ShowAndGetTime(timedate, heading))
-              value = StringUtils::Format("%2d:%02d", timedate.hour, timedate.minute);
+              value = StringUtils::Format("{:2}:{:02}", timedate.hour, timedate.minute);
             else
               value = emptyString;
           }

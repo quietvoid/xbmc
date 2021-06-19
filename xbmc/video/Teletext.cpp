@@ -18,7 +18,6 @@
 #include "Application.h"
 #include "filesystem/SpecialProtocol.h"
 #include "input/Key.h"
-#include "threads/SystemClock.h"
 #include "utils/log.h"
 #include "windowing/GraphicContext.h"
 
@@ -594,14 +593,14 @@ bool CTeletextDecoder::InitDecoder()
   m_txtCache = g_application.GetAppPlayer().GetTeletextCache();
   if (m_txtCache == NULL)
   {
-    CLog::Log(LOGERROR, "%s: called without teletext cache", __FUNCTION__);
+    CLog::Log(LOGERROR, "{}: called without teletext cache", __FUNCTION__);
     return false;
   }
 
   /* init fontlibrary */
   if ((error = FT_Init_FreeType(&m_Library)))
   {
-    CLog::Log(LOGERROR, "%s: <FT_Init_FreeType: 0x%.2X>", __FUNCTION__, error);
+    CLog::Log(LOGERROR, "{}: <FT_Init_FreeType: {:#2X}>", __FUNCTION__, error);
     m_Library = NULL;
     return false;
   }
@@ -611,7 +610,7 @@ bool CTeletextDecoder::InitDecoder()
     FT_Done_FreeType(m_Library);
     m_Library = NULL;
     m_Manager = NULL;
-    CLog::Log(LOGERROR, "%s: <FTC_Manager_New: 0x%.2X>", __FUNCTION__, error);
+    CLog::Log(LOGERROR, "{}: <FTC_Manager_New: {:#2X}>", __FUNCTION__, error);
     return false;
   }
 
@@ -621,7 +620,7 @@ bool CTeletextDecoder::InitDecoder()
     FT_Done_FreeType(m_Library);
     m_Manager = NULL;
     m_Library = NULL;
-    CLog::Log(LOGERROR, "%s: <FTC_SBit_Cache_New: 0x%.2X>", __FUNCTION__, error);
+    CLog::Log(LOGERROR, "{}: <FTC_SBit_Cache_New: {:#2X}>", __FUNCTION__, error);
     return false;
   }
 
@@ -643,7 +642,7 @@ bool CTeletextDecoder::InitDecoder()
     m_TypeTTF.face_id = (FTC_FaceID) const_cast<char*>(m_teletextFont.c_str());
     if ((error = FTC_Manager_LookupFace(m_Manager, m_TypeTTF.face_id, &m_Face)))
     {
-      CLog::Log(LOGERROR, "%s: <FTC_Manager_Lookup_Face failed with Errorcode 0x%.2X>",
+      CLog::Log(LOGERROR, "{}: <FTC_Manager_Lookup_Face failed with Errorcode {:#2X}>",
                 __FUNCTION__, error);
       FTC_Manager_Done(m_Manager);
       FT_Done_FreeType(m_Library);
@@ -713,7 +712,7 @@ void CTeletextDecoder::EndDecoder()
 
   if (!m_txtCache)
   {
-    CLog::Log(LOGINFO, "%s: called without cache", __FUNCTION__);
+    CLog::Log(LOGINFO, "{}: called without cache", __FUNCTION__);
   }
   else
   {
@@ -1163,11 +1162,11 @@ void CTeletextDecoder::RenderPage()
         if (c == NULL)
           return;
 
-        memset(c, 0x00, sizeof(TextSubtitleCache_t));
+        c = {};
         m_RenderInfo.SubtitleCache[j] = c;
       }
       c->Valid = true;
-      c->Timestamp = XbmcThreads::SystemClockMillis()/1000;
+      c->Timestamp = std::chrono::steady_clock::now();
 
       if (m_txtCache->SubPageTable[m_txtCache->Page] != 0xFF)
       {
@@ -1207,10 +1206,12 @@ void CTeletextDecoder::RenderPage()
   {
     if (m_RenderInfo.DelayStarted)
     {
-      long now = XbmcThreads::SystemClockMillis()/1000;
+      auto now = std::chrono::steady_clock::now();
       for (TextSubtitleCache_t* const subtitleCache : m_RenderInfo.SubtitleCache)
       {
-        if (subtitleCache && subtitleCache->Valid && now - subtitleCache->Timestamp >= (long)m_RenderInfo.SubtitleDelay)
+        if (subtitleCache && subtitleCache->Valid &&
+            std::chrono::duration_cast<std::chrono::seconds>(now - subtitleCache->Timestamp)
+                    .count() >= m_RenderInfo.SubtitleDelay)
         {
           memcpy(m_RenderInfo.PageChar, subtitleCache->PageChar, 40 * 25);
           memcpy(m_RenderInfo.PageAtrb, subtitleCache->PageAtrb, 40 * 25 * sizeof(TextPageAttr_t));
@@ -1312,7 +1313,7 @@ void CTeletextDecoder::DoFlashing(int startrow)
   /* Flashing */
   TextPageAttr_t flashattr;
   char flashchar;
-  long flashphase = XbmcThreads::SystemClockMillis() % 1000;
+  long flashphase = std::chrono::steady_clock::now().time_since_epoch().count() % 1000;
 
   int srow = startrow;
   int erow = 24;
@@ -1571,7 +1572,7 @@ void CTeletextDecoder::Decode_BTT()
 
     if (b1 == 0xFF || b2 == 0xFF || b3 == 0xFF)
     {
-      CLog::Log(LOGERROR, "CTeletextDecoder::Decode_BTT <Biterror in btt/plt index %d>", i);
+      CLog::Log(LOGERROR, "CTeletextDecoder::Decode_BTT <Biterror in btt/plt index {}>", i);
       btt[799] = ' '; /* mark btt as not received */
       return;
     }
@@ -1609,12 +1610,10 @@ void CTeletextDecoder::Decode_ADIP() /* additional information table */
 
       if (b1 == 0xFF || b2 == 0xFF || b3 == 0xFF)
       {
-        CLog::Log(LOGERROR, "CTeletextDecoder::Decode_BTT <Biterror in ait %03x %d %02x %02x %02x %02x %02x %02x>", p, j,
-                   padip[20*j+0],
-                   padip[20*j+1],
-                   padip[20*j+2],
-                   b1, b2, b3
-                   );
+        CLog::Log(LOGERROR,
+                  "CTeletextDecoder::Decode_BTT <Biterror in ait {:03x} {} {:02x} {:02x} {:02x} "
+                  "{:02x} {:02x} {:02x}>",
+                  p, j, padip[20 * j + 0], padip[20 * j + 1], padip[20 * j + 2], b1, b2, b3);
         return;
       }
 
@@ -1871,9 +1870,9 @@ FT_Error CTeletextDecoder::MyFaceRequester(FTC_FaceID face_id, FT_Library librar
   FT_Error result = FT_New_Face(library, (const char*)face_id, 0, aface);
 
   if (!result)
-    CLog::Log(LOGINFO, "Teletext font %s loaded", (char*)face_id);
+    CLog::Log(LOGINFO, "Teletext font {} loaded", (char*)face_id);
   else
-    CLog::Log(LOGERROR, "Opening of Teletext font %s failed", (char*)face_id);
+    CLog::Log(LOGERROR, "Opening of Teletext font {} failed", (char*)face_id);
 
   return result;
 }
@@ -2208,7 +2207,8 @@ void CTeletextDecoder::RenderCharIntern(TextRenderInfo_t* RenderInfo, int Char, 
 
   if (!(glyph = FT_Get_Char_Index(m_Face, alphachar)))
   {
-    CLog::Log(LOGERROR, "%s:  <FT_Get_Char_Index for Char %x \"%c\" failed", __FUNCTION__, alphachar, alphachar);
+    CLog::Log(LOGERROR, "{}:  <FT_Get_Char_Index for Char {:x} \"{}\" failed", __FUNCTION__,
+              alphachar, alphachar);
 
     FillRect(m_TextureBuffer, m_RenderInfo.Width, m_RenderInfo.PosX, m_RenderInfo.PosY + yoffset, curfontwidth, factor*m_RenderInfo.FontHeight, bgcolor);
     m_RenderInfo.PosX += curfontwidth;

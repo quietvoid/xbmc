@@ -23,6 +23,8 @@
 #include "websocket/WebSocketManager.h"
 #include "Network.h"
 
+using namespace std::chrono_literals;
+
 #if defined(TARGET_WINDOWS) || defined(HAVE_LIBBLUETOOTH)
 static const char     bt_service_name[] = "XBMC JSON-RPC";
 static const char     bt_service_desc[] = "Interface for XBMC remote control over bluetooth";
@@ -123,7 +125,7 @@ void CTCPServer::Process()
     if (res < 0)
     {
       CLog::Log(LOGERROR, "JSONRPC Server: Select failed");
-      CThread::Sleep(1000);
+      CThread::Sleep(1000ms);
       Initialize();
     }
     else if (res > 0)
@@ -186,10 +188,10 @@ void CTCPServer::Process()
 
           if (newconnection->m_socket == INVALID_SOCKET)
           {
-            CLog::Log(LOGERROR, "JSONRPC Server: Accept of new connection failed: %d", errno);
+            CLog::Log(LOGERROR, "JSONRPC Server: Accept of new connection failed: {}", errno);
             if (EBADF == errno)
             {
-              CThread::Sleep(1000);
+              CThread::Sleep(1000ms);
               Initialize();
               break;
             }
@@ -265,7 +267,7 @@ bool CTCPServer::Initialize()
 #ifdef TARGET_WINDOWS_STORE
 bool CTCPServer::InitializeBlue()
 {
-  CLog::Log(LOGDEBUG, "%s is not implemented", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} is not implemented", __FUNCTION__);
   return true; // need to fake it for now
 }
 
@@ -336,7 +338,8 @@ bool CTCPServer::InitializeBlue()
   service.dwNumberOfCsAddrs       = 1;
 
   if (WSASetService(&service, RNRSERVICE_REGISTER, 0) == SOCKET_ERROR)
-    CLog::Log(LOGERROR, "JSONRPC Server: failed to register bluetooth service error %d",  WSAGetLastError());
+    CLog::Log(LOGERROR, "JSONRPC Server: failed to register bluetooth service error {}",
+              WSAGetLastError());
 
   return true;
 #endif
@@ -367,7 +370,7 @@ bool CTCPServer::InitializeBlue()
 
   if (listen(fd, 10) < 0)
   {
-    CLog::Log(LOGERROR, "JSONRPC Server: Failed to listen to bluetooth port %d", sa.rc_channel);
+    CLog::Log(LOGERROR, "JSONRPC Server: Failed to listen to bluetooth port {}", sa.rc_channel);
     closesocket(fd);
     return false;
   }
@@ -438,7 +441,7 @@ bool CTCPServer::InitializeBlue()
 
   if (sdp_record_register(session, record, 0) < 0)
   {
-    CLog::Log(LOGERROR, "JSONRPC Server: Failed to register record with error %d", errno);
+    CLog::Log(LOGERROR, "JSONRPC Server: Failed to register record with error {}", errno);
     closesocket(fd);
     sdp_close(session);
     sdp_record_free(record);

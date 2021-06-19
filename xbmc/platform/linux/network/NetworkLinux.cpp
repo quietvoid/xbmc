@@ -99,12 +99,12 @@ bool CNetworkInterfaceLinux::GetHostMacAddress(unsigned long host_ip, std::strin
 
   if (result != 0)
   {
-    //  CLog::Log(LOGERROR, "%s - GetHostMacAddress/ioctl failed with errno (%d)", __FUNCTION__, errno);
+    //  CLog::Log(LOGERROR, "{} - GetHostMacAddress/ioctl failed with errno ({})", __FUNCTION__, errno);
     return false;
   }
 
   struct sockaddr* res = &areq.arp_ha;
-  mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", (uint8_t)res->sa_data[0],
+  mac = StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", (uint8_t)res->sa_data[0],
                             (uint8_t)res->sa_data[1], (uint8_t)res->sa_data[2],
                             (uint8_t)res->sa_data[3], (uint8_t)res->sa_data[4],
                             (uint8_t)res->sa_data[5]);
@@ -217,7 +217,7 @@ bool CNetworkLinux::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
   // else some error
 
   if (result < 0 || result > 1)
-    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
+    CLog::Log(LOGERROR, "Ping fail : status = {}, errno = {} : '{}'", status, errno, cmd_line);
 
   return result == 0;
 }

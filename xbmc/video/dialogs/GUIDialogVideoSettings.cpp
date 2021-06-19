@@ -103,9 +103,11 @@ void CGUIDialogVideoSettings::OnSettingChanged(const std::shared_ptr<const CSett
                                                vs.m_CustomNonLinStretch);
 
     m_viewModeChanged = true;
-    GetSettingsManager()->SetNumber(SETTING_VIDEO_ZOOM, vs.m_CustomZoomAmount);
-    GetSettingsManager()->SetNumber(SETTING_VIDEO_PIXEL_RATIO, vs.m_CustomPixelRatio);
-    GetSettingsManager()->SetNumber(SETTING_VIDEO_VERTICAL_SHIFT, vs.m_CustomVerticalShift);
+    GetSettingsManager()->SetNumber(SETTING_VIDEO_ZOOM, static_cast<double>(vs.m_CustomZoomAmount));
+    GetSettingsManager()->SetNumber(SETTING_VIDEO_PIXEL_RATIO,
+                                    static_cast<double>(vs.m_CustomPixelRatio));
+    GetSettingsManager()->SetNumber(SETTING_VIDEO_VERTICAL_SHIFT,
+                                    static_cast<double>(vs.m_CustomVerticalShift));
     GetSettingsManager()->SetBool(SETTING_VIDEO_NONLIN_STRETCH, vs.m_CustomNonLinStretch);
     m_viewModeChanged = false;
   }
@@ -399,11 +401,14 @@ void CGUIDialogVideoSettings::InitializeSettings()
     AddList(groupVideo, SETTING_VIDEO_VIEW_MODE, 629, SettingLevel::Basic, videoSettings.m_ViewMode, CViewModeSettings::ViewModesFiller, 629);
   }
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_ZOOM))
-    AddSlider(groupVideo, SETTING_VIDEO_ZOOM, 216, SettingLevel::Basic, videoSettings.m_CustomZoomAmount, "%2.2f", 0.5f, 0.01f, 2.0f, 216, usePopup);
+    AddSlider(groupVideo, SETTING_VIDEO_ZOOM, 216, SettingLevel::Basic,
+              videoSettings.m_CustomZoomAmount, "{:2.2f}", 0.5f, 0.01f, 2.0f, 216, usePopup);
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_VERTICAL_SHIFT))
-    AddSlider(groupVideo, SETTING_VIDEO_VERTICAL_SHIFT, 225, SettingLevel::Basic, videoSettings.m_CustomVerticalShift, "%2.2f", -2.0f, 0.01f, 2.0f, 225, usePopup);
+    AddSlider(groupVideo, SETTING_VIDEO_VERTICAL_SHIFT, 225, SettingLevel::Basic,
+              videoSettings.m_CustomVerticalShift, "{:2.2f}", -2.0f, 0.01f, 2.0f, 225, usePopup);
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_PIXEL_RATIO))
-    AddSlider(groupVideo, SETTING_VIDEO_PIXEL_RATIO, 217, SettingLevel::Basic, videoSettings.m_CustomPixelRatio, "%2.2f", 0.5f, 0.01f, 2.0f, 217, usePopup);
+    AddSlider(groupVideo, SETTING_VIDEO_PIXEL_RATIO, 217, SettingLevel::Basic,
+              videoSettings.m_CustomPixelRatio, "{:2.2f}", 0.5f, 0.01f, 2.0f, 217, usePopup);
 
   AddList(groupVideo, SETTING_VIDEO_ORIENTATION, 21843, SettingLevel::Basic, videoSettings.m_Orientation, CGUIDialogVideoSettings::VideoOrientationFiller, 21843);
 
@@ -416,9 +421,11 @@ void CGUIDialogVideoSettings::InitializeSettings()
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_GAMMA))
     AddPercentageSlider(groupVideo, SETTING_VIDEO_GAMMA, 466, SettingLevel::Basic, static_cast<int>(videoSettings.m_Gamma), 14047, 1, 466, usePopup);
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_NOISE))
-    AddSlider(groupVideo, SETTING_VIDEO_VDPAU_NOISE, 16312, SettingLevel::Basic, videoSettings.m_NoiseReduction, "%2.2f", 0.0f, 0.01f, 1.0f, 16312, usePopup);
+    AddSlider(groupVideo, SETTING_VIDEO_VDPAU_NOISE, 16312, SettingLevel::Basic,
+              videoSettings.m_NoiseReduction, "{:2.2f}", 0.0f, 0.01f, 1.0f, 16312, usePopup);
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_SHARPNESS))
-    AddSlider(groupVideo, SETTING_VIDEO_VDPAU_SHARPNESS, 16313, SettingLevel::Basic, videoSettings.m_Sharpness, "%2.2f", -1.0f, 0.02f, 1.0f, 16313, usePopup);
+    AddSlider(groupVideo, SETTING_VIDEO_VDPAU_SHARPNESS, 16313, SettingLevel::Basic,
+              videoSettings.m_Sharpness, "{:2.2f}", -1.0f, 0.02f, 1.0f, 16313, usePopup);
   if (g_application.GetAppPlayer().Supports(RENDERFEATURE_NONLINSTRETCH))
     AddToggle(groupVideo, SETTING_VIDEO_NONLIN_STRETCH, 659, SettingLevel::Basic, videoSettings.m_CustomNonLinStretch);
 
@@ -437,7 +444,7 @@ void CGUIDialogVideoSettings::InitializeSettings()
     AddSpinner(groupVideo, SETTING_VIDEO_TONEMAP_METHOD, 36553, SettingLevel::Basic,
                videoSettings.m_ToneMapMethod, entries, false, visible);
     AddSlider(groupVideo, SETTING_VIDEO_TONEMAP_PARAM, 36556, SettingLevel::Basic,
-              videoSettings.m_ToneMapParam, "%2.2f", 0.1f, 0.1f, 5.0f, 36556, usePopup, false,
+              videoSettings.m_ToneMapParam, "{:2.2f}", 0.1f, 0.1f, 5.0f, 36556, usePopup, false,
               visible);
   }
 
@@ -489,7 +496,7 @@ void CGUIDialogVideoSettings::VideoStreamsOptionFiller(
     if (!info.name.empty())
     {
       if (!strLanguage.empty())
-        strItem = StringUtils::Format("%s - %s", strLanguage.c_str(), info.name.c_str());
+        strItem = StringUtils::Format("{} - {}", strLanguage, info.name);
       else
         strItem = info.name;
     }
@@ -499,17 +506,17 @@ void CGUIDialogVideoSettings::VideoStreamsOptionFiller(
     }
 
     if (info.codecName.empty())
-      strItem += StringUtils::Format(" (%ix%i", info.width, info.height);
+      strItem += StringUtils::Format(" ({}x{}", info.width, info.height);
     else
-      strItem += StringUtils::Format(" (%s, %ix%i", info.codecName.c_str(), info.width, info.height);
+      strItem += StringUtils::Format(" ({}, {}x{}", info.codecName, info.width, info.height);
 
     if (info.bitrate)
-      strItem += StringUtils::Format(", %i bps)", info.bitrate);
+      strItem += StringUtils::Format(", {} bps)", info.bitrate);
     else
       strItem += ")";
 
     strItem += FormatFlags(info.flags);
-    strItem += StringUtils::Format(" (%i/%i)", i + 1, videoStreamCount);
+    strItem += StringUtils::Format(" ({}/{})", i + 1, videoStreamCount);
     list.emplace_back(strItem, i);
   }
 
@@ -546,7 +553,7 @@ std::string CGUIDialogVideoSettings::FormatFlags(StreamFlags flags)
   std::string formated = StringUtils::Join(localizedFlags, ", ");
 
   if (!formated.empty())
-    formated = StringUtils::Format(" [%s]", formated);
+    formated = StringUtils::Format(" [{}]", formated);
 
   return formated;
 }

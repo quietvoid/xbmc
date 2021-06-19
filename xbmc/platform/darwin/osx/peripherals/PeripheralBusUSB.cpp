@@ -114,8 +114,8 @@ void CPeripheralBusUSB::DeviceDetachCallback(void *refCon, io_service_t service,
     }
     privateDataRef->refCon->ScanForDevices();
 
-    CLog::Log(LOGDEBUG, "USB Device Detach:%s, %s", privateDataRef->deviceName.c_str(),
-              privateDataRef->result.m_strLocation.c_str());
+    CLog::Log(LOGDEBUG, "USB Device Detach:{}, {}", privateDataRef->deviceName,
+              privateDataRef->result.m_strLocation);
     IOObjectRelease(privateDataRef->notification);
     delete privateDataRef;
     //release the service
@@ -237,9 +237,9 @@ void CPeripheralBusUSB::DeviceAttachCallback(CPeripheralBusUSB* refCon, io_itera
           }
         }
         if (!ttlDeviceFilePath.empty())
-          privateDataRef->result.m_strLocation = StringUtils::Format("%s", ttlDeviceFilePath.c_str());
+          privateDataRef->result.m_strLocation = ttlDeviceFilePath;
         else
-          privateDataRef->result.m_strLocation = StringUtils::Format("%d", locationId);
+          privateDataRef->result.m_strLocation = std::to_string(locationId);
 
         if (bDeviceClass == kUSBCompositeClass)
           privateDataRef->result.m_type = refCon->GetType(bInterfaceClass);
@@ -260,8 +260,8 @@ void CPeripheralBusUSB::DeviceAttachCallback(CPeripheralBusUSB* refCon, io_itera
           if (result == kIOReturnSuccess)
           {
             refCon->m_scan_results.m_results.push_back(privateDataRef->result);
-            CLog::Log(LOGDEBUG, "USB Device Attach:%s, %s", deviceName,
-                      privateDataRef->result.m_strLocation.c_str());
+            CLog::Log(LOGDEBUG, "USB Device Attach:{}, {}", deviceName,
+                      privateDataRef->result.m_strLocation);
           }
           else
           {

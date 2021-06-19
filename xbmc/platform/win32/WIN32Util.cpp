@@ -71,7 +71,7 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
 {
 #ifdef TARGET_WINDOWS_STORE
   CLog::LogF(LOGDEBUG, "is not implemented");
-  CLog::LogF(LOGDEBUG, "Could not determine tray status %d", GetLastError());
+  CLog::LogF(LOGDEBUG, "Could not determine tray status {}", GetLastError());
   return -1;
 #else
   using KODI::PLATFORM::WINDOWS::ToW;
@@ -84,7 +84,7 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
   T_SPDT_SBUF sptd_sb;  //SCSI Pass Through Direct variable.
   byte DataBuf[8];  //Buffer for holding data to/from drive.
 
-  CLog::LogF(LOGDEBUG, "Requesting status for drive %s.", strPath);
+  CLog::LogF(LOGDEBUG, "Requesting status for drive {}.", strPath);
 
   hDevice = CreateFile( strPathW.c_str(),                  // drive
                         0,                                // no access to the drive
@@ -96,11 +96,11 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
 
   if (hDevice == INVALID_HANDLE_VALUE)                    // cannot open the drive
   {
-    CLog::LogF(LOGERROR, "Failed to CreateFile for %s.", strPath);
+    CLog::LogF(LOGERROR, "Failed to CreateFile for {}.", strPath);
     return -1;
   }
 
-  CLog::LogF(LOGDEBUG, "Requesting media status for drive %s.", strPath);
+  CLog::LogF(LOGDEBUG, "Requesting media status for drive {}.", strPath);
   iResult = DeviceIoControl((HANDLE) hDevice,             // handle to device
                              IOCTL_STORAGE_CHECK_VERIFY2, // dwIoControlCode
                              NULL,                        // lpInBuffer
@@ -129,7 +129,7 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
 
   if (hDevice == INVALID_HANDLE_VALUE)
   {
-    CLog::LogF(LOGERROR, "Failed to CreateFile2 for %s.", strPath);
+    CLog::LogF(LOGERROR, "Failed to CreateFile2 for {}.", strPath);
     return -1;
   }
 
@@ -166,7 +166,7 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
   ZeroMemory(sptd_sb.SenseBuf, MAX_SENSE_LEN);
 
   //Send the command to drive
-  CLog::LogF(LOGDEBUG, "Requesting tray status for drive %s.", strPath);
+  CLog::LogF(LOGDEBUG, "Requesting tray status for drive {}.", strPath);
   iResult = DeviceIoControl((HANDLE) hDevice,
                             IOCTL_SCSI_PASS_THROUGH_DIRECT,
                             (PVOID)&sptd_sb, (DWORD)sizeof(sptd_sb),
@@ -186,7 +186,7 @@ int CWIN32Util::GetDriveStatus(const std::string &strPath, bool bStatusEx)
     else
       return 2; // tray closed, media present
   }
-  CLog::LogF(LOGERROR, "Could not determine tray status %d", GetLastError());
+  CLog::LogF(LOGERROR, "Could not determine tray status {}", GetLastError());
   return -1;
 #endif
 }
@@ -283,18 +283,27 @@ bool CWIN32Util::XBMCShellExecute(const std::string &strPath, bool bWaitForScrip
 std::string CWIN32Util::GetResInfoString()
 {
 #ifdef TARGET_WINDOWS_STORE
-  auto displayInfo = DisplayInformation::GetForCurrentView();
-
-  return StringUtils::Format("Desktop Resolution: %dx%d"
-    , displayInfo.ScreenWidthInRawPixels()
-    , displayInfo.ScreenHeightInRawPixels()
-  );
+  auto hdmiInfo = HdmiDisplayInformation::GetForCurrentView();
+  if (hdmiInfo) // Xbox
+  {
+    auto mode = hdmiInfo.GetCurrentDisplayMode();
+    return StringUtils::Format(
+        "Desktop Resolution: {}x{} {}Bit at {:.2f}Hz", mode.ResolutionWidthInRawPixels(),
+        mode.ResolutionHeightInRawPixels(), mode.BitsPerPixel(), mode.RefreshRate());
+  }
+  else // Windows 10 UWP
+  {
+    auto info = DisplayInformation::GetForCurrentView();
+    return StringUtils::Format("Desktop Resolution: {}x{}", info.ScreenWidthInRawPixels(),
+                               info.ScreenHeightInRawPixels());
+  }
 #else
-  DEVMODE devmode;
-  ZeroMemory(&devmode, sizeof(devmode));
+  DEVMODE devmode = {};
   devmode.dmSize = sizeof(devmode);
   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devmode);
-  return StringUtils::Format("Desktop Resolution: %dx%d %dBit at %dHz",devmode.dmPelsWidth,devmode.dmPelsHeight,devmode.dmBitsPerPel,devmode.dmDisplayFrequency);
+  return StringUtils::Format("Desktop Resolution: {}x{} {}Bit at {}Hz", devmode.dmPelsWidth,
+                             devmode.dmPelsHeight, devmode.dmBitsPerPel,
+                             devmode.dmDisplayFrequency);
 #endif
 }
 
@@ -458,7 +467,7 @@ std::wstring CWIN32Util::ConvertPathToWin32Form(const std::string& pathUtf8)
 
   if (!convertResult)
   {
-    CLog::Log(LOGERROR, "Error converting path \"%s\" to Win32 wide string!", pathUtf8.c_str());
+    CLog::Log(LOGERROR, "Error converting path \"{}\" to Win32 wide string!", pathUtf8);
     return L"";
   }
 
@@ -493,7 +502,7 @@ std::wstring CWIN32Util::ConvertPathToWin32Form(const CURL& url)
   else
     return std::wstring(); // unsupported protocol, return empty string
 
-  CLog::LogF(LOGERROR, "Error converting path \"%s\" to Win32 form", url.Get());
+  CLog::LogF(LOGERROR, "Error converting path \"{}\" to Win32 form", url.Get());
   return std::wstring(); // empty string
 }
 
@@ -531,10 +540,10 @@ HRESULT CWIN32Util::ToggleTray(const char cDriveLetter)
     cDL = dvdDevice[0];
   }
 
-  auto strVolFormat = ToW(StringUtils::Format("\\\\.\\%c:", cDL));
+  auto strVolFormat = ToW(StringUtils::Format("\\\\.\\{}:", cDL));
   HANDLE hDrive= CreateFile( strVolFormat.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                              NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  auto strRootFormat = ToW(StringUtils::Format("%c:\\", cDL));
+  auto strRootFormat = ToW(StringUtils::Format("{}:\\", cDL));
   if( ( hDrive != INVALID_HANDLE_VALUE || GetLastError() == NO_ERROR) &&
     ( GetDriveType( strRootFormat.c_str() ) == DRIVE_CDROM ) )
   {
@@ -547,7 +556,7 @@ HRESULT CWIN32Util::ToggleTray(const char cDriveLetter)
   if(dwReq == IOCTL_STORAGE_EJECT_MEDIA && bRet == 1)
   {
     CMediaSource share;
-    share.strPath = StringUtils::Format("%c:", cDL);
+    share.strPath = StringUtils::Format("{}:", cDL);
     share.strName = share.strPath;
     CServiceBroker::GetMediaManager().RemoveAutoSource(share);
   }
@@ -567,7 +576,7 @@ HRESULT CWIN32Util::EjectTray(const char cDriveLetter)
     cDL = dvdDevice[0];
   }
 
-  std::string strVolFormat = StringUtils::Format("\\\\.\\%c:", cDL);
+  std::string strVolFormat = StringUtils::Format("\\\\.\\{}:", cDL);
 
   if(GetDriveStatus(strVolFormat, true) != 1)
     return ToggleTray(cDL);
@@ -586,7 +595,7 @@ HRESULT CWIN32Util::CloseTray(const char cDriveLetter)
     cDL = dvdDevice[0];
   }
 
-  std::string strVolFormat = StringUtils::Format( "\\\\.\\%c:", cDL);
+  std::string strVolFormat = StringUtils::Format("\\\\.\\{}:", cDL);
 
   if(GetDriveStatus(strVolFormat, true) == 1)
     return ToggleTray(cDL);
@@ -1189,7 +1198,7 @@ bool CWIN32Util::IsUsbDevice(const std::wstring &strWdrive)
   }
   return false;
 #else
-  std::wstring strWDevicePath = StringUtils::Format(L"\\\\.\\%s",strWdrive.substr(0, 2).c_str());
+  std::wstring strWDevicePath = StringUtils::Format(L"\\\\.\\{}", strWdrive.substr(0, 2));
 
   HANDLE deviceHandle = CreateFileW(
     strWDevicePath.c_str(),
@@ -1237,9 +1246,9 @@ std::string CWIN32Util::WUSysMsg(DWORD dwError)
 
   if ( 0 != ::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
                              SS_DEFLANGID, szBuf, 511, NULL) )
-    return StringUtils::Format("%s (0x%X)", szBuf, dwError);
+    return StringUtils::Format("{} (0x{:X})", szBuf, dwError);
   else
-    return StringUtils::Format("Unknown error (0x%X)", dwError);
+    return StringUtils::Format("Unknown error (0x{:X})", dwError);
 }
 
 bool CWIN32Util::SetThreadLocalLocale(bool enable /* = true */)
@@ -1253,48 +1262,7 @@ HDR_STATUS CWIN32Util::ToggleWindowsHDR(DXGI_MODE_DESC& modeDesc)
   HDR_STATUS status = HDR_STATUS::HDR_TOGGLE_FAILED;
 
 #ifdef TARGET_WINDOWS_STORE
-  auto hdmiDisplayInfo = HdmiDisplayInformation::GetForCurrentView();
-
-  if (hdmiDisplayInfo == nullptr)
-    return status;
-
-  auto current = hdmiDisplayInfo.GetCurrentDisplayMode();
-
-  auto newColorSp = (current.ColorSpace() == HdmiDisplayColorSpace::BT2020)
-                        ? HdmiDisplayColorSpace::BT709
-                        : HdmiDisplayColorSpace::BT2020;
-
-  auto modes = hdmiDisplayInfo.GetSupportedDisplayModes();
-
-  // Browse over all modes available like the current (resolution and refresh)
-  // but reciprocals HDR (color space and transfer).
-  // NOTE: transfer for HDR is here "fake HDR" (EotfSdr) to be
-  // able render SRD content with HDR ON, same as Windows HDR switch does.
-  // GUI-skin is SDR. The real HDR mode is activated later when playback begins.
-  for (const auto& mode : modes)
-  {
-    if (mode.ColorSpace() == newColorSp &&
-        mode.ResolutionHeightInRawPixels() == current.ResolutionHeightInRawPixels() &&
-        mode.ResolutionWidthInRawPixels() == current.ResolutionWidthInRawPixels() &&
-        mode.StereoEnabled() == false && fabs(mode.RefreshRate() - current.RefreshRate()) < 0.0001)
-    {
-      if (current.ColorSpace() == HdmiDisplayColorSpace::BT2020) // HDR is ON
-      {
-        CLog::LogF(LOGINFO, "Toggle Windows HDR Off (ON => OFF).");
-        if (Wait(hdmiDisplayInfo.RequestSetCurrentDisplayModeAsync(mode,
-                                                                   HdmiDisplayHdrOption::None)))
-          status = HDR_STATUS::HDR_OFF;
-      }
-      else // HDR is OFF
-      {
-        CLog::LogF(LOGINFO, "Toggle Windows HDR On (OFF => ON).");
-        if (Wait(hdmiDisplayInfo.RequestSetCurrentDisplayModeAsync(mode,
-                                                                   HdmiDisplayHdrOption::EotfSdr)))
-          status = HDR_STATUS::HDR_ON;
-      }
-      break;
-    }
-  }
+  // Not supported - not implemented yet
 #else
   uint32_t pathCount = 0;
   uint32_t modeCount = 0;
@@ -1515,7 +1483,7 @@ HDR_STATUS CWIN32Util::GetWindowsHDRStatus()
   {
     status = advancedColorEnabled ? HDR_STATUS::HDR_ON : HDR_STATUS::HDR_OFF;
     if (CServiceBroker::IsServiceManagerUp())
-      CLog::LogF(LOGDEBUG, "Display HDR capable and current HDR status is {}",
+      CLog::LogF(LOGDEBUG, "Display is HDR capable and current HDR status is {}",
                  advancedColorEnabled ? "ON" : "OFF");
   }
 

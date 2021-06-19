@@ -13,6 +13,7 @@
 #include "ServiceBroker.h"
 #include "addons/AddonManager.h"
 #include "addons/gui/GUIDialogAddonSettings.h"
+#include "addons/settings/AddonSettings.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
@@ -77,6 +78,11 @@ namespace XBMCAddon
     String Addon::getLocalizedString(int id)
     {
       return g_localizeStrings.GetAddonString(pAddon->ID(), id);
+    }
+
+    Settings* Addon::getSettings()
+    {
+      return new Settings(pAddon->GetSettings());
     }
 
     String Addon::getSetting(const char* id)
@@ -150,7 +156,7 @@ namespace XBMCAddon
     {
       DelayedCallGuard dcguard(languageHook);
       ADDON::AddonPtr addon(pAddon);
-      if (UpdateSettingInActiveDialog(id, StringUtils::Format("%d", value)))
+      if (UpdateSettingInActiveDialog(id, std::to_string(value)))
         return true;
 
       if (!addon->UpdateSettingInt(id, value))
@@ -165,7 +171,7 @@ namespace XBMCAddon
     {
       DelayedCallGuard dcguard(languageHook);
       ADDON::AddonPtr addon(pAddon);
-      if (UpdateSettingInActiveDialog(id, StringUtils::Format("%f", value)))
+      if (UpdateSettingInActiveDialog(id, StringUtils::Format("{:f}", value)))
         return true;
 
       if (!addon->UpdateSettingNumber(id, value))

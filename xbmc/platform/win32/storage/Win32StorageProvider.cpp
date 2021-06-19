@@ -36,7 +36,7 @@ void CWin32StorageProvider::Initialize()
   if(!vShare.empty())
     CServiceBroker::GetMediaManager().SetHasOpticalDrive(true);
   else
-    CLog::Log(LOGDEBUG, "%s: No optical drive found.", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "{}: No optical drive found.", __FUNCTION__);
 
 #ifdef HAS_DVD_DRIVE
   // Can be removed once the StorageHandler supports optical media
@@ -92,7 +92,7 @@ bool CWin32StorageProvider::Eject(const std::string& mountpath)
   if( !mountpath[0] )
     return false;
 
-  auto strVolFormat = ToW(StringUtils::Format("\\\\.\\%c:", mountpath[0]));
+  auto strVolFormat = ToW(StringUtils::Format("\\\\.\\{}:", mountpath[0]));
 
   long DiskNumber = -1;
 
@@ -156,7 +156,9 @@ std::vector<std::string > CWin32StorageProvider::GetDiskUsage()
       if( DRIVE_FIXED == GetDriveType( strDrive.c_str()  ) &&
         GetDiskFreeSpaceEx( ( strDrive.c_str() ), nullptr, &ULTotal, &ULTotalFree ) )
       {
-        strRet = KODI::PLATFORM::WINDOWS::FromW(StringUtils::Format(L"%s %d MB %s",strDrive.c_str(), int(ULTotalFree.QuadPart/(1024*1024)), KODI::PLATFORM::WINDOWS::ToW(g_localizeStrings.Get(160).c_str())));
+        strRet = KODI::PLATFORM::WINDOWS::FromW(
+            StringUtils::Format(L"{} {} MB {}", strDrive, int(ULTotalFree.QuadPart / (1024 * 1024)),
+                                KODI::PLATFORM::WINDOWS::ToW(g_localizeStrings.Get(160))));
         result.push_back(strRet);
       }
       iPos += (wcslen( pcBuffer.get() + iPos) + 1 );
@@ -240,17 +242,19 @@ void CWin32StorageProvider::GetDrivesByType(VECSOURCES &localDrives, Drive_Types
           switch(uDriveType)
           {
           case DRIVE_CDROM:
-            share.strName = StringUtils::Format( "%s (%s)", share.strPath.c_str(), g_localizeStrings.Get(218).c_str());
+            share.strName =
+                StringUtils::Format("{} ({})", share.strPath, g_localizeStrings.Get(218));
             break;
           case DRIVE_REMOVABLE:
             if(share.strName.empty())
-              share.strName = StringUtils::Format( "%s (%s)", g_localizeStrings.Get(437).c_str(), share.strPath.c_str());
+              share.strName =
+                  StringUtils::Format("{} ({})", g_localizeStrings.Get(437), share.strPath);
             break;
           default:
             if(share.strName.empty())
               share.strName = share.strPath;
             else
-              share.strName = StringUtils::Format( "%s (%s)", share.strPath.c_str(), share.strName.c_str());
+              share.strName = StringUtils::Format("{} ({})", share.strPath, share.strName);
             break;
           }
         }
@@ -361,7 +365,7 @@ CDetectDisc::CDetectDisc(const std::string &strPath, const bool bautorun)
 bool CDetectDisc::DoWork()
 {
 #ifdef HAS_DVD_DRIVE
-  CLog::Log(LOGDEBUG, "%s: Optical media found in drive %s", __FUNCTION__, m_strPath.c_str());
+  CLog::Log(LOGDEBUG, "{}: Optical media found in drive {}", __FUNCTION__, m_strPath);
   CMediaSource share;
   share.strPath = m_strPath;
   share.strStatus = CServiceBroker::GetMediaManager().GetDiskLabel(share.strPath);

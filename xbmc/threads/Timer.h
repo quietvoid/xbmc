@@ -11,6 +11,7 @@
 #include "Event.h"
 #include "Thread.h"
 
+#include <chrono>
 #include <functional>
 
 class ITimerCallback
@@ -28,10 +29,10 @@ public:
   explicit CTimer(std::function<void()> const& callback);
   ~CTimer() override;
 
-  bool Start(uint32_t timeout, bool interval = false);
+  bool Start(std::chrono::milliseconds timeout, bool interval = false);
   bool Stop(bool wait = false);
   bool Restart();
-  void RestartAsync(uint32_t timeout);
+  void RestartAsync(std::chrono::milliseconds timeout);
 
   bool IsRunning() const { return CThread::IsRunning(); }
 
@@ -43,8 +44,8 @@ protected:
 
 private:
   std::function<void()> m_callback;
-  uint32_t m_timeout;
+  std::chrono::milliseconds m_timeout;
   bool m_interval;
-  uint32_t m_endTime;
+  std::chrono::time_point<std::chrono::steady_clock> m_endTime;
   CEvent m_eventTimeout;
 };

@@ -139,19 +139,24 @@ static int RunAddon(const std::vector<std::string>& params)
 
       std::string cmd;
       if (plugin->Provides(CPluginSource::VIDEO))
-        cmd = StringUtils::Format("ActivateWindow(Videos,plugin://%s%s,return)", addonid.c_str(), urlParameters.c_str());
+        cmd = StringUtils::Format("ActivateWindow(Videos,plugin://{}{},return)", addonid,
+                                  urlParameters);
       else if (plugin->Provides(CPluginSource::AUDIO))
-        cmd = StringUtils::Format("ActivateWindow(Music,plugin://%s%s,return)", addonid.c_str(), urlParameters.c_str());
+        cmd = StringUtils::Format("ActivateWindow(Music,plugin://{}{},return)", addonid,
+                                  urlParameters);
       else if (plugin->Provides(CPluginSource::EXECUTABLE))
-        cmd = StringUtils::Format("ActivateWindow(Programs,plugin://%s%s,return)", addonid.c_str(), urlParameters.c_str());
+        cmd = StringUtils::Format("ActivateWindow(Programs,plugin://{}{},return)", addonid,
+                                  urlParameters);
       else if (plugin->Provides(CPluginSource::IMAGE))
-        cmd = StringUtils::Format("ActivateWindow(Pictures,plugin://%s%s,return)", addonid.c_str(), urlParameters.c_str());
+        cmd = StringUtils::Format("ActivateWindow(Pictures,plugin://{}{},return)", addonid,
+                                  urlParameters);
       else if (plugin->Provides(CPluginSource::GAME))
-        cmd = StringUtils::Format("ActivateWindow(Games,plugin://%s%s,return)", addonid.c_str(), urlParameters.c_str());
+        cmd = StringUtils::Format("ActivateWindow(Games,plugin://{}{},return)", addonid,
+                                  urlParameters);
       else
         // Pass the script name (addonid) and all the parameters
         // (params[1] ... params[x]) separated by a comma to RunPlugin
-        cmd = StringUtils::Format("RunPlugin(%s)", StringUtils::Join(params, ",").c_str());
+        cmd = StringUtils::Format("RunPlugin({})", StringUtils::Join(params, ","));
       CBuiltins::GetInstance().Execute(cmd);
     }
     else if (CServiceBroker::GetAddonMgr().GetAddon(addonid, addon, ADDON_SCRIPT,
@@ -165,7 +170,8 @@ static int RunAddon(const std::vector<std::string>& params)
     {
       // Pass the script name (addonid) and all the parameters
       // (params[1] ... params[x]) separated by a comma to RunScript
-      CBuiltins::GetInstance().Execute(StringUtils::Format("RunScript(%s)", StringUtils::Join(params, ",").c_str()));
+      CBuiltins::GetInstance().Execute(
+          StringUtils::Format("RunScript({})", StringUtils::Join(params, ",")));
     }
     else if (CServiceBroker::GetAddonMgr().GetAddon(addonid, addon, ADDON_GAMEDLL,
                                                     OnlyEnabled::YES))
@@ -182,12 +188,15 @@ static int RunAddon(const std::vector<std::string>& params)
 
       if (!g_application.PlayMedia(item, "", PLAYLIST_NONE))
       {
-        CLog::Log(LOGERROR, "RunAddon could not start %s", addonid.c_str());
+        CLog::Log(LOGERROR, "RunAddon could not start {}", addonid);
         return false;
       }
     }
     else
-      CLog::Log(LOGERROR, "RunAddon: unknown add-on id '%s', or unexpected add-on type (not a script or plugin).", addonid.c_str());
+      CLog::Log(
+          LOGERROR,
+          "RunAddon: unknown add-on id '{}', or unexpected add-on type (not a script or plugin).",
+          addonid);
   }
   else
   {
@@ -246,7 +255,9 @@ static int RunScript(const std::vector<std::string>& params)
         //Run a random extension point (old behaviour).
         CServiceBroker::GetAddonMgr().GetAddon(params[0], addon, ADDON_UNKNOWN, OnlyEnabled::YES);
         scriptpath = addon->LibPath();
-        CLog::Log(LOGWARNING, "RunScript called for a non-script addon '%s'. This behaviour is deprecated.", params[0].c_str());
+        CLog::Log(LOGWARNING,
+                  "RunScript called for a non-script addon '{}'. This behaviour is deprecated.",
+                  params[0]);
       }
     }
     else

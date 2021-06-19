@@ -18,6 +18,7 @@
 #include "pvr/addons/PVRClients.h"
 #include "pvr/channels/PVRChannel.h"
 #include "pvr/channels/PVRChannelGroup.h"
+#include "pvr/channels/PVRChannelGroupMember.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
 #include "pvr/epg/EpgInfoTag.h"
 #include "pvr/timers/PVRTimerInfoTag.h"
@@ -824,12 +825,14 @@ void CGUIDialogPVRTimerSettings::InitializeChannelsList()
 
   // Add regular channels
   const std::shared_ptr<CPVRChannelGroup> allGroup = CServiceBroker::GetPVRManager().ChannelGroups()->GetGroupAll(m_bIsRadio);
-  const std::vector<std::shared_ptr<PVRChannelGroupMember>> groupMembers = allGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
+  const std::vector<std::shared_ptr<CPVRChannelGroupMember>> groupMembers =
+      allGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
   for (const auto& groupMember : groupMembers)
   {
-    const std::shared_ptr<CPVRChannel> channel = groupMember->channel;
-    const std::string channelDescription
-      = StringUtils::Format("%s %s", channel->ChannelNumber().FormattedChannelNumber().c_str(), channel->ChannelName().c_str());
+    const std::shared_ptr<CPVRChannel> channel = groupMember->Channel();
+    const std::string channelDescription =
+        StringUtils::Format("{} {}", groupMember->ChannelNumber().FormattedChannelNumber(),
+                            channel->ChannelName());
     m_channelEntries.insert({index, ChannelDescriptor(channel->UniqueID(), channel->ClientID(), channelDescription)});
     ++index;
   }
@@ -1022,7 +1025,7 @@ void CGUIDialogPVRTimerSettings::PrioritiesFiller(const SettingConstPtr& setting
     if (it == list.end())
     {
       // PVR backend supplied value is not in the list of predefined values. Insert it.
-      list.insert(it, IntegerSettingOption(StringUtils::Format("%d", current), current));
+      list.insert(it, IntegerSettingOption(std::to_string(current), current));
     }
   }
   else
@@ -1058,7 +1061,9 @@ void CGUIDialogPVRTimerSettings::LifetimesFiller(const SettingConstPtr& setting,
     if (it == list.end())
     {
       // PVR backend supplied value is not in the list of predefined values. Insert it.
-      list.insert(it, IntegerSettingOption(StringUtils::Format(g_localizeStrings.Get(17999).c_str(), current) /* %i days */, current));
+      list.insert(it, IntegerSettingOption(
+                          StringUtils::Format(g_localizeStrings.Get(17999), current) /* {} days */,
+                          current));
     }
   }
   else
@@ -1094,7 +1099,7 @@ void CGUIDialogPVRTimerSettings::MaxRecordingsFiller(const SettingConstPtr& sett
     if (it == list.end())
     {
       // PVR backend supplied value is not in the list of predefined values. Insert it.
-      list.insert(it, IntegerSettingOption(StringUtils::Format("%d", current), current));
+      list.insert(it, IntegerSettingOption(std::to_string(current), current));
     }
   }
   else
@@ -1159,7 +1164,9 @@ void CGUIDialogPVRTimerSettings::MarginTimeFiller(const SettingConstPtr& setting
     if (bInsertValue)
     {
       // PVR backend supplied value is not in the list of predefined values. Insert it.
-      list.insert(it, IntegerSettingOption(StringUtils::Format(g_localizeStrings.Get(14044).c_str(), current) /* %i min */, current));
+      list.insert(it, IntegerSettingOption(
+                          StringUtils::Format(g_localizeStrings.Get(14044), current) /* {} min */,
+                          current));
     }
   }
   else

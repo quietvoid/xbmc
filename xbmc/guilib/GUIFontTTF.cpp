@@ -103,7 +103,7 @@ public:
 #endif // ! TARGET_WINDOWS
 
     unsigned int ydpi = 72; // 72 points to the inch is the freetype default
-    unsigned int xdpi = (unsigned int)MathUtils::round_int(ydpi * aspect);
+    unsigned int xdpi = (unsigned int)MathUtils::round_int(static_cast<double>(ydpi * aspect));
 
     // we set our screen res currently to 96dpi in both directions (windows default)
     // we cache our characters (for rendering speed) so it's probably
@@ -292,8 +292,9 @@ bool CGUIFontTTF::Load(
 
   // scale to pixel sizing, rounding so that maximal extent is obtained
   float scaler  = height / m_face->units_per_EM;
-  cellDescender = MathUtils::round_int(cellDescender * scaler - 0.5f);   // round down
-  cellAscender  = MathUtils::round_int(cellAscender  * scaler + 0.5f);   // round up
+  cellDescender =
+      MathUtils::round_int(cellDescender * static_cast<double>(scaler) - 0.5); // round down
+  cellAscender = MathUtils::round_int(cellAscender * static_cast<double>(scaler) + 0.5); // round up
 
   m_cellBaseLine = cellAscender;
   m_cellHeight   = cellAscender - cellDescender;
@@ -465,7 +466,7 @@ void CGUIFontTTF::DrawTextInternal(float x,
       Character* ch = GetCharacter(pos);
       if (!ch)
       {
-        Character null = { 0 };
+        Character null = {};
         characters.push(null);
         continue;
       }
@@ -673,12 +674,13 @@ CGUIFontTTF::Character* CGUIFontTTF::GetCharacter(character_t chr)
   if (nestedBeginCount) End();
   if (!CacheCharacter(letter, style, m_char + low))
   { // unable to cache character - try clearing them all out and starting over
-    CLog::Log(LOGDEBUG, "%s: Unable to cache character.  Clearing character cache of %i characters", __FUNCTION__, m_numChars);
+    CLog::Log(LOGDEBUG, "{}: Unable to cache character.  Clearing character cache of {} characters",
+              __FUNCTION__, m_numChars);
     ClearCharacterCache();
     low = 0;
     if (!CacheCharacter(letter, style, m_char + low))
     {
-      CLog::Log(LOGERROR, "%s: Unable to cache character (out of memory?)", __FUNCTION__);
+      CLog::Log(LOGERROR, "{}: Unable to cache character (out of memory?)", __FUNCTION__);
       if (nestedBeginCount) Begin();
       m_nestedBeginCount = nestedBeginCount;
       return NULL;
@@ -708,7 +710,8 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
   FT_Glyph glyph = NULL;
   if (FT_Load_Glyph( m_face, glyph_index, FT_LOAD_TARGET_LIGHT ))
   {
-    CLog::Log(LOGDEBUG, "%s Failed to load glyph %x", __FUNCTION__, static_cast<uint32_t>(letter));
+    CLog::Log(LOGDEBUG, "{} Failed to load glyph {:x}", __FUNCTION__,
+              static_cast<uint32_t>(letter));
     return false;
   }
   // make bold if applicable
@@ -723,7 +726,7 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
   // grab the glyph
   if (FT_Get_Glyph(m_face->glyph, &glyph))
   {
-    CLog::Log(LOGDEBUG, "%s Failed to get glyph %x", __FUNCTION__, static_cast<uint32_t>(letter));
+    CLog::Log(LOGDEBUG, "{} Failed to get glyph {:x}", __FUNCTION__, static_cast<uint32_t>(letter));
     return false;
   }
   if (m_stroker)
@@ -731,7 +734,8 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
   // render the glyph
   if (FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, NULL, 1))
   {
-    CLog::Log(LOGDEBUG, "%s Failed to render glyph %x to a bitmap", __FUNCTION__, static_cast<uint32_t>(letter));
+    CLog::Log(LOGDEBUG, "{} Failed to render glyph {:x} to a bitmap", __FUNCTION__,
+              static_cast<uint32_t>(letter));
     return false;
   }
   FT_BitmapGlyph bitGlyph = (FT_BitmapGlyph)glyph;
@@ -759,7 +763,8 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
         // check for max height
         if (newHeight > m_renderSystem->GetMaxTextureSize())
         {
-          CLog::Log(LOGDEBUG, "%s: New cache texture is too large (%u > %u pixels long)", __FUNCTION__, newHeight, m_renderSystem->GetMaxTextureSize());
+          CLog::Log(LOGDEBUG, "{}: New cache texture is too large ({} > {} pixels long)",
+                    __FUNCTION__, newHeight, m_renderSystem->GetMaxTextureSize());
           FT_Done_Glyph(glyph);
           return false;
         }
@@ -769,7 +774,8 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
         if(newTexture == NULL)
         {
           FT_Done_Glyph(glyph);
-          CLog::Log(LOGDEBUG, "%s: Failed to allocate new texture of height %u", __FUNCTION__, newHeight);
+          CLog::Log(LOGDEBUG, "{}: Failed to allocate new texture of height {}", __FUNCTION__,
+                    newHeight);
           return false;
         }
         m_texture = newTexture;
@@ -779,7 +785,7 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
     if(m_texture == NULL)
     {
       FT_Done_Glyph(glyph);
-      CLog::Log(LOGDEBUG, "%s: no texture to cache character to", __FUNCTION__);
+      CLog::Log(LOGDEBUG, "{}: no texture to cache character to", __FUNCTION__);
       return false;
     }
   }
@@ -791,7 +797,8 @@ bool CGUIFontTTF::CacheCharacter(wchar_t letter, uint32_t style, Character* ch)
   ch->top = isEmptyGlyph ? 0 : ((float)m_posY + ch->offsetY);
   ch->right = ch->left + bitmap.width;
   ch->bottom = ch->top + bitmap.rows;
-  ch->advance = (float)MathUtils::round_int( (float)m_face->glyph->advance.x / 64 );
+  ch->advance =
+      static_cast<float>(MathUtils::round_int(static_cast<double>(m_face->glyph->advance.x) / 64));
 
   // we need only render if we actually have some pixels
   if (!isEmptyGlyph)
@@ -857,10 +864,10 @@ void CGUIFontTTF::RenderCharacter(float posX,
     // altering the width of thin characters substantially.  This only really works for positive
     // coordinates (due to the direction of truncation for negatives) but this is the only case that
     // really interests us anyway.
-    float rx0 = (float)MathUtils::round_int(x[0]);
-    float rx3 = (float)MathUtils::round_int(x[3]);
-    x[1] = (float)MathUtils::truncate_int(x[1]);
-    x[2] = (float)MathUtils::truncate_int(x[2]);
+    float rx0 = static_cast<float>(MathUtils::round_int(static_cast<double>(x[0])));
+    float rx3 = static_cast<float>(MathUtils::round_int(static_cast<double>(x[3])));
+    x[1] = static_cast<float>(MathUtils::truncate_int(static_cast<double>(x[1])));
+    x[2] = static_cast<float>(MathUtils::truncate_int(static_cast<double>(x[2])));
     if (x[0] > 0.0f && rx0 > x[0])
       x[1] += 1;
     else if (x[0] < 0.0f && rx0 < x[0])
@@ -873,15 +880,23 @@ void CGUIFontTTF::RenderCharacter(float posX,
     x[3] = rx3;
   }
 
-  y[0] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x1, vertex.y1));
-  y[1] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x2, vertex.y1));
-  y[2] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x2, vertex.y2));
-  y[3] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x1, vertex.y2));
+  y[0] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x1, vertex.y1))));
+  y[1] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x2, vertex.y1))));
+  y[2] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x2, vertex.y2))));
+  y[3] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalYCoord(vertex.x1, vertex.y2))));
 
-  z[0] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x1, vertex.y1));
-  z[1] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x2, vertex.y1));
-  z[2] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x2, vertex.y2));
-  z[3] = (float)MathUtils::round_int(CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x1, vertex.y2));
+  z[0] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x1, vertex.y1))));
+  z[1] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x2, vertex.y1))));
+  z[2] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x2, vertex.y2))));
+  z[3] = static_cast<float>(MathUtils::round_int(static_cast<double>(
+      CServiceBroker::GetWinSystem()->GetGfxContext().ScaleFinalZCoord(vertex.x1, vertex.y2))));
 
   // tex coords converted to 0..1 range
   float tl = texture.x1 * m_textureScaleX;

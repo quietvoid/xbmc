@@ -26,6 +26,7 @@
 #include "pvr/PVRPlaybackState.h"
 #include "pvr/channels/PVRChannel.h"
 #include "pvr/channels/PVRChannelGroup.h"
+#include "pvr/channels/PVRChannelGroupMember.h"
 #include "pvr/channels/PVRChannelGroupsContainer.h"
 #include "pvr/channels/PVRChannelsPath.h"
 #include "pvr/epg/EpgChannelData.h"
@@ -47,6 +48,7 @@
 
 using namespace KODI::MESSAGING;
 using namespace PVR;
+using namespace std::chrono_literals;
 
 CGUIWindowPVRGuideBase::CGUIWindowPVRGuideBase(bool bRadio, int id, const std::string& xmlFile)
   : CGUIWindowPVRBase(bRadio, id, xmlFile), m_bChannelSelectionRestored(false)
@@ -193,9 +195,11 @@ void CGUIWindowPVRGuideBase::UpdateSelectedItemPath()
   CGUIEPGGridContainer* epgGridContainer = GetGridControl();
   if (epgGridContainer)
   {
-    std::shared_ptr<CPVRChannel> channel(epgGridContainer->GetSelectedChannel());
-    if (channel)
-      CServiceBroker::GetPVRManager().GUIActions()->SetSelectedItemPath(m_bRadio, channel->Path());
+    const std::shared_ptr<CPVRChannelGroupMember> groupMember =
+        epgGridContainer->GetSelectedChannelGroupMember();
+    if (groupMember)
+      CServiceBroker::GetPVRManager().GUIActions()->SetSelectedItemPath(m_bRadio,
+                                                                        groupMember->Path());
   }
 }
 
@@ -702,12 +706,12 @@ bool CGUIWindowPVRGuideBase::RefreshTimelineItems()
         endDate = maxFutureDate;
 
       std::unique_ptr<CFileItemList> channels(new CFileItemList);
-      const std::vector<std::shared_ptr<PVRChannelGroupMember>> groupMembers =
+      const std::vector<std::shared_ptr<CPVRChannelGroupMember>> groupMembers =
           group->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
 
       for (const auto& groupMember : groupMembers)
       {
-        channels->Add(std::make_shared<CFileItem>(groupMember->channel));
+        channels->Add(std::make_shared<CFileItem>(groupMember));
       }
 
       if (m_guiState)
@@ -908,11 +912,11 @@ void CPVRRefreshTimelineItemsThread::Process()
 
       iLastEpgItemsCount = iCurrentEpgItemsCount;
 
-      m_ready.WaitMSec(1000); // boosted update cycle
+      m_ready.Wait(1000ms); // boosted update cycle
     }
     else
     {
-      m_ready.WaitMSec(5000); // normal update cycle
+      m_ready.Wait(5000ms); // normal update cycle
     }
 
     m_ready.Reset();

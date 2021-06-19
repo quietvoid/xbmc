@@ -212,6 +212,7 @@ using namespace KODI::MESSAGING;
 using namespace ActiveAE;
 
 using namespace XbmcThreads;
+using namespace std::chrono_literals;
 
 using KODI::MESSAGING::HELPERS::DialogResponse;
 
@@ -387,9 +388,12 @@ bool CApplication::Create(const CAppParamParser &params)
   CLog::Log(LOGINFO, "creating subdirectories");
   const std::shared_ptr<CProfileManager> profileManager = m_pSettingsComponent->GetProfileManager();
   const std::shared_ptr<CSettings> settings = m_pSettingsComponent->GetSettings();
-  CLog::Log(LOGINFO, "userdata folder: %s", CURL::GetRedacted(profileManager->GetProfileUserDataFolder()).c_str());
-  CLog::Log(LOGINFO, "recording folder: %s", CURL::GetRedacted(settings->GetString(CSettings::SETTING_AUDIOCDS_RECORDINGPATH)).c_str());
-  CLog::Log(LOGINFO, "screenshots folder: %s", CURL::GetRedacted(settings->GetString(CSettings::SETTING_DEBUG_SCREENSHOTPATH)).c_str());
+  CLog::Log(LOGINFO, "userdata folder: {}",
+            CURL::GetRedacted(profileManager->GetProfileUserDataFolder()));
+  CLog::Log(LOGINFO, "recording folder: {}",
+            CURL::GetRedacted(settings->GetString(CSettings::SETTING_AUDIOCDS_RECORDINGPATH)));
+  CLog::Log(LOGINFO, "screenshots folder: {}",
+            CURL::GetRedacted(settings->GetString(CSettings::SETTING_DEBUG_SCREENSHOTPATH)));
   CDirectory::Create(profileManager->GetUserDataFolder());
   CDirectory::Create(profileManager->GetProfileUserDataFolder());
   profileManager->CreateProfileFolders();
@@ -445,7 +449,7 @@ bool CApplication::Create(const CAppParamParser &params)
 
   CUtil::InitRandomSeed();
 
-  m_lastRenderTime = XbmcThreads::SystemClockMillis();
+  m_lastRenderTime = std::chrono::steady_clock::now();
   return true;
 }
 
@@ -501,11 +505,11 @@ bool CApplication::CreateGUI()
   // Retrieve the matching resolution based on GUI settings
   bool sav_res = false;
   CDisplaySettings::GetInstance().SetCurrentResolution(CDisplaySettings::GetInstance().GetDisplayResolution());
-  CLog::Log(LOGINFO, "Checking resolution %i",
+  CLog::Log(LOGINFO, "Checking resolution {}",
             CDisplaySettings::GetInstance().GetCurrentResolution());
   if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
   {
-    CLog::Log(LOGINFO, "Setting safe mode %i", RES_DESKTOP);
+    CLog::Log(LOGINFO, "Setting safe mode {}", RES_DESKTOP);
     // defer saving resolution after window was created
     CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
     sav_res = true;
@@ -563,10 +567,7 @@ bool CApplication::CreateGUI()
     return false;
 
   RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
-  CLog::Log(LOGINFO, "GUI format %ix%i, Display %s",
-            info.iWidth,
-            info.iHeight,
-            info.strMode.c_str());
+  CLog::Log(LOGINFO, "GUI format {}x{}, Display {}", info.iWidth, info.iHeight, info.strMode);
 
   return true;
 }
@@ -608,9 +609,9 @@ bool CApplication::Initialize()
   const std::shared_ptr<CProfileManager> profileManager = CServiceBroker::GetSettingsComponent()->GetProfileManager();
 
   profileManager->GetEventLog().Add(EventPtr(new CNotificationEvent(
-    StringUtils::Format(g_localizeStrings.Get(177).c_str(), g_sysinfo.GetAppName().c_str()),
-    StringUtils::Format(g_localizeStrings.Get(178).c_str(), g_sysinfo.GetAppName().c_str()),
-    "special://xbmc/media/icon256x256.png", EventLevel::Basic)));
+      StringUtils::Format(g_localizeStrings.Get(177), g_sysinfo.GetAppName()),
+      StringUtils::Format(g_localizeStrings.Get(178), g_sysinfo.GetAppName()),
+      "special://xbmc/media/icon256x256.png", EventLevel::Basic)));
 
   m_ServiceManager->GetNetwork().WaitForNet();
 
@@ -625,7 +626,7 @@ bool CApplication::Initialize()
 
   std::string localizedStr = g_localizeStrings.Get(24150);
   int iDots = 1;
-  while (!event.WaitMSec(1000))
+  while (!event.Wait(1000ms))
   {
     if (databaseManager.IsUpgrading())
       CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
@@ -669,7 +670,7 @@ bool CApplication::Initialize()
             CJob::PRIORITY_DEDICATED);
         localizedStr = g_localizeStrings.Get(24151);
         iDots = 1;
-        while (!event.WaitMSec(1000))
+        while (!event.Wait(1000ms))
         {
           CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr +
                                                         std::string(iDots, '.'));
@@ -702,10 +703,11 @@ bool CApplication::Initialize()
     std::string defaultSkin = std::static_pointer_cast<const CSettingString>(setting)->GetDefault();
     if (!LoadSkin(settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN)))
     {
-      CLog::Log(LOGERROR, "Failed to load skin '%s'", settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN).c_str());
+      CLog::Log(LOGERROR, "Failed to load skin '{}'",
+                settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN));
       if (!LoadSkin(defaultSkin))
       {
-        CLog::Log(LOGFATAL, "Default skin '%s' could not be loaded! Terminating..", defaultSkin.c_str());
+        CLog::Log(LOGFATAL, "Default skin '{}' could not be loaded! Terminating..", defaultSkin);
         return false;
       }
     }
@@ -789,56 +791,6 @@ bool CApplication::Initialize()
   }
 
   return true;
-}
-
-bool CApplication::StartServer(enum ESERVERS eServer, bool bStart, bool bWait/* = false*/)
-{
-  bool ret = false;
-  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
-  switch(eServer)
-  {
-    case ES_WEBSERVER:
-      // the callback will take care of starting/stopping webserver
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_WEBSERVER, bStart);
-      break;
-
-    case ES_AIRPLAYSERVER:
-      // the callback will take care of starting/stopping airplay
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_AIRPLAY, bStart);
-      break;
-
-    case ES_JSONRPCSERVER:
-      // the callback will take care of starting/stopping jsonrpc server
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_ESENABLED, bStart);
-      break;
-
-    case ES_UPNPSERVER:
-      // the callback will take care of starting/stopping upnp server
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_UPNPSERVER, bStart);
-      break;
-
-    case ES_UPNPRENDERER:
-      // the callback will take care of starting/stopping upnp renderer
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_UPNPRENDERER, bStart);
-      break;
-
-    case ES_EVENTSERVER:
-      // the callback will take care of starting/stopping event server
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_ESENABLED, bStart);
-      break;
-
-    case ES_ZEROCONF:
-      // the callback will take care of starting/stopping zeroconf
-      ret = settings->SetBool(CSettings::SETTING_SERVICES_ZEROCONF, bStart);
-      break;
-
-    default:
-      ret = false;
-      break;
-  }
-  settings->Save();
-
-  return ret;
 }
 
 void CApplication::OnSettingChanged(const std::shared_ptr<const CSetting>& setting)
@@ -1159,12 +1111,12 @@ bool CApplication::LoadSkin(const std::string& skinID)
   // check if the skin has been properly loaded and if it has a Home.xml
   if (!skin->HasSkinFile("Home.xml"))
   {
-    CLog::Log(LOGERROR, "failed to load requested skin '%s'", skin->ID().c_str());
+    CLog::Log(LOGERROR, "failed to load requested skin '{}'", skin->ID());
     return false;
   }
 
-  CLog::Log(LOGINFO, "  load skin from: %s (version: %s)", skin->Path().c_str(),
-            skin->Version().asString().c_str());
+  CLog::Log(LOGINFO, "  load skin from: {} (version: {})", skin->Path(),
+            skin->Version().asString());
   g_SkinInfo = skin;
 
   CLog::Log(LOGINFO, "  load fonts for skin...");
@@ -1196,7 +1148,7 @@ bool CApplication::LoadSkin(const std::string& skinID)
   int64_t end, freq;
   end = CurrentHostCounter();
   freq = CurrentHostFrequency();
-  CLog::Log(LOGDEBUG,"Load Skin XML: %.2fms", 1000.f * (end - start) / freq);
+  CLog::Log(LOGDEBUG, "Load Skin XML: {:.2f}ms", 1000.f * (end - start) / freq);
 
   CLog::Log(LOGINFO, "  initialize new skin...");
   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(this);
@@ -1298,7 +1250,7 @@ bool CApplication::LoadCustomWindows()
 
   for (const auto &skinPath : vecSkinPath)
   {
-    CLog::Log(LOGINFO, "Loading custom window XMLs from skin path %s", skinPath.c_str());
+    CLog::Log(LOGINFO, "Loading custom window XMLs from skin path {}", skinPath);
 
     CFileItemList items;
     if (CDirectory::GetDirectory(skinPath, items, ".xml", DIR_FLAG_NO_FILE_DIRS))
@@ -1314,7 +1266,8 @@ bool CApplication::LoadCustomWindows()
           CXBMCTinyXML xmlDoc;
           if (!xmlDoc.LoadFile(item->GetPath()))
           {
-            CLog::Log(LOGERROR, "Unable to load custom window XML %s. Line %d\n%s", item->GetPath().c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+            CLog::Log(LOGERROR, "Unable to load custom window XML {}. Line {}\n{}", item->GetPath(),
+                      xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
             continue;
           }
 
@@ -1323,7 +1276,7 @@ bool CApplication::LoadCustomWindows()
           std::string strValue = pRootElement->Value();
           if (!StringUtils::EqualsNoCase(strValue, "window"))
           {
-            CLog::Log(LOGERROR, "No <window> root element found for custom window in %s", skinFile.c_str());
+            CLog::Log(LOGERROR, "No <window> root element found for custom window in {}", skinFile);
             continue;
           }
 
@@ -1353,7 +1306,8 @@ bool CApplication::LoadCustomWindows()
           if (id == WINDOW_INVALID || CServiceBroker::GetGUI()->GetWindowManager().GetWindow(windowId))
           {
             // No id specified or id already in use
-            CLog::Log(LOGERROR, "No id specified or id already in use for custom window in %s", skinFile.c_str());
+            CLog::Log(LOGERROR, "No id specified or id already in use for custom window in {}",
+                      skinFile);
             continue;
           }
 
@@ -1380,7 +1334,7 @@ bool CApplication::LoadCustomWindows()
 
           if (!pWindow)
           {
-            CLog::Log(LOGERROR, "Failed to create custom window from %s", skinFile.c_str());
+            CLog::Log(LOGERROR, "Failed to create custom window from {}", skinFile);
             continue;
           }
 
@@ -1439,7 +1393,7 @@ void CApplication::Render()
     // execute post rendering actions (finalize window closing)
     CServiceBroker::GetGUI()->GetWindowManager().AfterRender();
 
-    m_lastRenderTime = XbmcThreads::SystemClockMillis();
+    m_lastRenderTime = std::chrono::steady_clock::now();
   }
 
   // render video layer
@@ -2114,7 +2068,7 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
     {
       if (!audioengine->Suspend())
       {
-        CLog::Log(LOGINFO, "%s: Failed to suspend AudioEngine before launching external program",
+        CLog::Log(LOGINFO, "{}: Failed to suspend AudioEngine before launching external program",
                   __FUNCTION__);
       }
     }
@@ -2130,7 +2084,8 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
     {
       if (!audioengine->Resume())
       {
-        CLog::Log(LOGFATAL, "%s: Failed to restart AudioEngine after return from external player", __FUNCTION__);
+        CLog::Log(LOGFATAL, "{}: Failed to restart AudioEngine after return from external player",
+                  __FUNCTION__);
       }
     }
     break;
@@ -2248,7 +2203,7 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
   break;
 
   default:
-    CLog::Log(LOGERROR, "%s: Unhandled threadmessage sent, %u", __FUNCTION__, msg);
+    CLog::Log(LOGERROR, "{}: Unhandled threadmessage sent, {}", __FUNCTION__, msg);
     break;
   }
 }
@@ -2278,7 +2233,7 @@ void CApplication::HandleShutdownMessage()
     break;
 
   default:
-    CLog::Log(LOGERROR, "%s: No valid shutdownstate matched", __FUNCTION__);
+    CLog::Log(LOGERROR, "{}: No valid shutdownstate matched", __FUNCTION__);
     break;
   }
 }
@@ -2306,8 +2261,8 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
     float frameTime = m_frameTime.GetElapsedSeconds();
     m_frameTime.StartZero();
     // never set a frametime less than 2 fps to avoid problems when debugging and on breaks
-    if( frameTime > 0.5 )
-      frameTime = 0.5;
+    if (frameTime > 0.5f)
+      frameTime = 0.5f;
 
     if (processGUI && m_renderGUI)
     {
@@ -2365,8 +2320,9 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
     if (CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenVideo() && !m_appPlayer.IsPausedPlayback() && m_appPlayer.IsRenderingVideoLayer())
       fps = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOPLAYER_LIMITGUIUPDATE);
 
-    unsigned int now = XbmcThreads::SystemClockMillis();
-    unsigned int frameTime = now - m_lastRenderTime;
+    auto now = std::chrono::steady_clock::now();
+
+    auto frameTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastRenderTime).count();
     if (fps > 0 && frameTime * fps < 1000)
       m_skipGuiRender = true;
     */
@@ -2392,11 +2348,18 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
 }
 
 
+void CApplication::ResetCurrentItem()
+{
+  m_itemCurrentFile->Reset();
+  if (m_pGUI)
+    m_pGUI->GetInfoManager().ResetCurrentItem();
+}
 
 bool CApplication::Cleanup()
 {
   try
   {
+    ResetCurrentItem();
     StopPlaying();
 
     if (m_ServiceManager)
@@ -2624,17 +2587,8 @@ void CApplication::Stop(int exitCode)
 
 bool CApplication::PlayMedia(CFileItem& item, const std::string &player, int iPlaylist)
 {
-  // If item is a plugin, expand out
-  for (int i=0; URIUtils::IsPlugin(item.GetDynPath()) && i<5; ++i)
-  {
-    bool resume = item.m_lStartOffset == STARTOFFSET_RESUME;
-
-    if (!XFILE::CPluginDirectory::GetPluginResult(item.GetDynPath(), item, resume) ||
-        item.GetDynPath() == item.GetPath()) // GetPluginResult resolved to an empty path
-      return false;
-  }
-  // if after the 5 resolution attempts the item is still a plugin just return, it isn't playable
-  if (URIUtils::IsPlugin(item.GetDynPath()))
+  // if the item is a plugin we need to resolve the plugin paths
+  if (URIUtils::HasPluginPath(item) && !XFILE::CPluginDirectory::GetResolvedPluginResult(item))
     return false;
 
   if (item.IsSmartPlayList())
@@ -2682,7 +2636,10 @@ bool CApplication::PlayMedia(CFileItem& item, const std::string &player, int iPl
       }
       else
       {
-        CLog::Log(LOGWARNING, "CApplication::PlayMedia called to play a playlist %s but no idea which playlist to use, playing first item", item.GetPath().c_str());
+        CLog::Log(LOGWARNING,
+                  "CApplication::PlayMedia called to play a playlist {} but no idea which playlist "
+                  "to use, playing first item",
+                  item.GetPath());
         if(pPlayList->size())
           return PlayFile(*(*pPlayList)[0], "", false);
       }
@@ -2761,16 +2718,8 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
   if (item.IsPlayList())
     return false;
 
-  for (int i=0; URIUtils::IsPlugin(item.GetDynPath()) && i<5; ++i)
-  { // we modify the item so that it becomes a real URL
-    bool resume = item.m_lStartOffset == STARTOFFSET_RESUME;
-
-    if (!XFILE::CPluginDirectory::GetPluginResult(item.GetDynPath(), item, resume) ||
-        item.GetDynPath() == item.GetPath()) // GetPluginResult resolved to an empty path
-      return false;
-  }
-  // if after the 5 resolution attempts the item is still a plugin just return, it isn't playable
-  if (URIUtils::IsPlugin(item.GetDynPath()))
+  // if the item is a plugin we need to resolve the plugin paths
+  if (URIUtils::HasPluginPath(item) && !XFILE::CPluginDirectory::GetResolvedPluginResult(item))
     return false;
 
 #ifdef HAS_UPNP
@@ -2827,7 +2776,7 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
       }
       else if (item.m_lStartOffset == STARTOFFSET_RESUME)
       {
-        options.starttime = 0.0f;
+        options.starttime = 0.0;
         if (item.IsResumePointSet())
         {
           options.starttime = item.GetCurrentResumeTime();
@@ -2849,7 +2798,7 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
           }
         }
 
-        if (options.starttime == 0.0f && item.HasVideoInfoTag())
+        if (options.starttime == 0.0 && item.HasVideoInfoTag())
         {
           // No resume point is set, but check if this item is part of a multi-episode file
           const CVideoInfoTag *tag = item.GetVideoInfoTag();
@@ -2881,7 +2830,8 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
   }
 
   // a disc image might be Blu-Ray disc
-  if (!(options.startpercent > 0.0f || options.starttime > 0.0f) && (item.IsBDFile() || item.IsDiscImage()))
+  if (!(options.startpercent > 0.0 || options.starttime > 0.0) &&
+      (item.IsBDFile() || item.IsDiscImage()))
   {
     //check if we must show the simplified bd menu
     if (!CGUIDialogSimpleMenu::ShowPlaySelection(item))
@@ -2945,7 +2895,7 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
     };
     int dMsgCount = CServiceBroker::GetGUI()->GetWindowManager().RemoveThreadMessageByMessageIds(&previousMsgsIgnoredByNewPlaying[0]);
     if (dMsgCount > 0)
-      CLog::LogF(LOGDEBUG,"Ignored %d playback thread messages", dMsgCount);
+      CLog::LogF(LOGDEBUG, "Ignored {} playback thread messages", dMsgCount);
   }
 
   m_appPlayer.OpenFile(item, options, m_ServiceManager->GetPlayerCoreFactory(), player, *this);
@@ -3084,7 +3034,7 @@ void CApplication::OnPlayerCloseFile(const CFileItem &file, const CBookmark &boo
   float percent = 0.0f;
 
   // Make sure we don't reset existing bookmark etc. on eg. player start failure
-  if (bookmark.timeInSeconds == 0.0f)
+  if (bookmark.timeInSeconds == 0.0)
     return;
 
   if (m_stackHelper.GetRegisteredStack(fileItem) != nullptr && m_stackHelper.GetRegisteredStackTotalTimeMs(fileItem) > 0)
@@ -3112,9 +3062,10 @@ void CApplication::OnPlayerCloseFile(const CFileItem &file, const CBookmark &boo
 
   if (advancedSettings->m_videoIgnorePercentAtEnd > 0 &&
       bookmark.totalTimeInSeconds - bookmark.timeInSeconds <
-        0.01f * advancedSettings->m_videoIgnorePercentAtEnd * bookmark.totalTimeInSeconds)
+          0.01 * static_cast<double>(advancedSettings->m_videoIgnorePercentAtEnd) *
+              bookmark.totalTimeInSeconds)
   {
-    resumeBookmark.timeInSeconds = -1.0f;
+    resumeBookmark.timeInSeconds = -1.0;
   }
   else if (bookmark.timeInSeconds > advancedSettings->m_videoIgnoreSecondsAtStart)
   {
@@ -3127,7 +3078,7 @@ void CApplication::OnPlayerCloseFile(const CFileItem &file, const CBookmark &boo
   }
   else
   {
-    resumeBookmark.timeInSeconds = 0.0f;
+    resumeBookmark.timeInSeconds = 0.0;
   }
 
   if (CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetCurrentProfile().canWriteDatabases())
@@ -3272,7 +3223,7 @@ void CApplication::RequestVideoSettings(const CFileItem &fileItem)
   CVideoDatabase dbs;
   if (dbs.Open())
   {
-    CLog::Log(LOGDEBUG, "Loading settings for %s", CURL::GetRedacted(fileItem.GetPath()).c_str());
+    CLog::Log(LOGDEBUG, "Loading settings for {}", CURL::GetRedacted(fileItem.GetPath()));
 
     // Load stored settings if they exist, otherwise use default
     CVideoSettings vs;
@@ -3674,7 +3625,7 @@ void CApplication::ActivateScreenSaver(bool forceType /*= false */)
     std::string libPath = m_pythonScreenSaver->LibPath();
     if (CScriptInvocationManager::GetInstance().HasLanguageInvoker(libPath))
     {
-      CLog::Log(LOGDEBUG, "using python screensaver add-on %s", m_screensaverIdInUse.c_str());
+      CLog::Log(LOGDEBUG, "using python screensaver add-on {}", m_screensaverIdInUse);
 
       // Don't allow a previously-scheduled alarm to kill our new screensaver
       g_alarmClock.Stop(SCRIPT_ALARM, true);
@@ -3774,7 +3725,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
 
           // migration (incompatible addons) dialog
           auto addonList = StringUtils::Join(disabledAddonNames, ", ");
-          auto msg = StringUtils::Format(g_localizeStrings.Get(24149).c_str(), addonList.c_str());
+          auto msg = StringUtils::Format(g_localizeStrings.Get(24149), addonList);
           HELPERS::ShowOKDialogText(CVariant{24148}, CVariant{std::move(msg)});
           m_incompatibleAddons.clear();
         }
@@ -3916,8 +3867,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
 
   case GUI_MSG_PLAYBACK_STOPPED:
     m_playerEvent.Set();
-    m_itemCurrentFile->Reset();
-    CServiceBroker::GetGUI()->GetInfoManager().ResetCurrentItem();
+    ResetCurrentItem();
     PlaybackCleanup();
 #ifdef HAS_PYTHON
     CServiceBroker::GetXBPython().OnPlayBackStopped();
@@ -3931,8 +3881,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
       PlayFile(m_stackHelper.SetNextStackPartCurrentFileItem(), "", true);
       return true;
     }
-    m_itemCurrentFile->Reset();
-    CServiceBroker::GetGUI()->GetInfoManager().ResetCurrentItem();
+    ResetCurrentItem();
     if (!CServiceBroker::GetPlaylistPlayer().PlayNext(1, true))
       m_appPlayer.ClosePlayer();
 
@@ -3944,8 +3893,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
     return true;
 
   case GUI_MSG_PLAYLISTPLAYER_STOPPED:
-    m_itemCurrentFile->Reset();
-    CServiceBroker::GetGUI()->GetInfoManager().ResetCurrentItem();
+    ResetCurrentItem();
     if (m_appPlayer.IsPlaying())
       StopPlaying();
     PlaybackCleanup();
@@ -4039,7 +3987,7 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPt
     {
       //At this point we have given up to translate, so even though
       //there may be insecure information, we log it.
-      CLog::LogF(LOGDEBUG,"Tried translating, but failed to understand %s", in_actionStr.c_str());
+      CLog::LogF(LOGDEBUG, "Tried translating, but failed to understand {}", in_actionStr);
       return false;
     }
   }
@@ -4487,9 +4435,9 @@ double CApplication::GetTotalTime() const
   if (m_appPlayer.IsPlaying())
   {
     if (m_stackHelper.IsPlayingRegularStack())
-      rc = m_stackHelper.GetStackTotalTimeMs() * 0.001f;
+      rc = m_stackHelper.GetStackTotalTimeMs() * 0.001;
     else
-      rc = static_cast<double>(m_appPlayer.GetTotalTime() * 0.001f);
+      rc = m_appPlayer.GetTotalTime() * 0.001;
   }
 
   return rc;
@@ -4522,10 +4470,10 @@ double CApplication::GetTime() const
     if (m_stackHelper.IsPlayingRegularStack())
     {
       uint64_t startOfCurrentFile = m_stackHelper.GetCurrentStackPartStartTimeMs();
-      rc = (startOfCurrentFile + m_appPlayer.GetTime()) * 0.001f;
+      rc = (startOfCurrentFile + m_appPlayer.GetTime()) * 0.001;
     }
     else
-      rc = static_cast<double>(m_appPlayer.GetTime() * 0.001f);
+      rc = m_appPlayer.GetTime() * 0.001;
   }
 
   return rc;
@@ -4582,7 +4530,7 @@ float CApplication::GetPercentage() const
     if (m_stackHelper.IsPlayingRegularStack())
     {
       double totalTime = GetTotalTime();
-      if (totalTime > 0.0f)
+      if (totalTime > 0.0)
         return (float)(GetTime() / totalTime * 100);
     }
     else
@@ -4611,12 +4559,12 @@ float CApplication::GetCachePercentage() const
 
 void CApplication::SeekPercentage(float percent)
 {
-  if (m_appPlayer.IsPlaying() && (percent >= 0.0))
+  if (m_appPlayer.IsPlaying() && (percent >= 0.0f))
   {
     if (!m_appPlayer.CanSeek())
       return;
     if (m_stackHelper.IsPlayingRegularStack())
-      SeekTime(percent * 0.01 * GetTotalTime());
+      SeekTime(static_cast<double>(percent) * 0.01 * GetTotalTime());
     else
       m_appPlayer.SeekPercentage(percent);
   }
@@ -4671,7 +4619,7 @@ void CApplication::UpdateCurrentPlayArt()
 
 bool CApplication::ProcessAndStartPlaylist(const std::string& strPlayList, CPlayList& playlist, int iPlaylist, int track)
 {
-  CLog::Log(LOGDEBUG,"CApplication::ProcessAndStartPlaylist(%s, %i)",strPlayList.c_str(), iPlaylist);
+  CLog::Log(LOGDEBUG, "CApplication::ProcessAndStartPlaylist({}, {})", strPlayList, iPlaylist);
 
   // initial exit conditions
   // no songs in playlist just return
@@ -4796,8 +4744,7 @@ void CApplication::PrintStartupLog()
   std::string cpuModel(CServiceBroker::GetCPUInfo()->GetCPUModel());
   if (!cpuModel.empty())
   {
-    // cpuModel must use c_str(), otherwise some cpuid calls provide null bytes in the string
-    CLog::Log(LOGINFO, "Host CPU: {}, {} core{} available", cpuModel.c_str(),
+    CLog::Log(LOGINFO, "Host CPU: {}, {} core{} available", cpuModel,
               CServiceBroker::GetCPUInfo()->GetCPUCount(),
               (CServiceBroker::GetCPUInfo()->GetCPUCount() == 1) ? "" : "s");
   }

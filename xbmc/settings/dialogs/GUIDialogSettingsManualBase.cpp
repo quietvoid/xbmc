@@ -646,9 +646,9 @@ std::shared_ptr<CSettingNumber> CGUIDialogSettingsManualBase::AddSpinner(
     return NULL;
 
   setting->SetControl(GetSpinnerControl("number", delayed, minimumLabel, formatLabel));
-  setting->SetMinimum(minimum);
-  setting->SetStep(step);
-  setting->SetMaximum(maximum);
+  setting->SetMinimum(static_cast<double>(minimum));
+  setting->SetStep(static_cast<double>(step));
+  setting->SetMaximum(static_cast<double>(maximum));
   setSettingDetails(setting, level, visible, help);
 
   group->AddSetting(setting);
@@ -679,9 +679,9 @@ std::shared_ptr<CSettingNumber> CGUIDialogSettingsManualBase::AddSpinner(
     return NULL;
 
   setting->SetControl(GetSpinnerControl("number", delayed, minimumLabel, -1, formatString));
-  setting->SetMinimum(minimum);
-  setting->SetStep(step);
-  setting->SetMaximum(maximum);
+  setting->SetMinimum(static_cast<double>(minimum));
+  setting->SetStep(static_cast<double>(step));
+  setting->SetMaximum(static_cast<double>(maximum));
   setSettingDetails(setting, level, visible, help);
 
   group->AddSetting(setting);
@@ -1133,9 +1133,9 @@ std::shared_ptr<CSettingNumber> CGUIDialogSettingsManualBase::AddSlider(
     return NULL;
 
   setting->SetControl(GetSliderControl("number", delayed, heading, usePopup, formatLabel));
-  setting->SetMinimum(minimum);
-  setting->SetStep(step);
-  setting->SetMaximum(maximum);
+  setting->SetMinimum(static_cast<double>(minimum));
+  setting->SetStep(static_cast<double>(step));
+  setting->SetMaximum(static_cast<double>(maximum));
   setSettingDetails(setting, level, visible, help);
 
   group->AddSetting(setting);
@@ -1167,9 +1167,9 @@ std::shared_ptr<CSettingNumber> CGUIDialogSettingsManualBase::AddSlider(
     return NULL;
 
   setting->SetControl(GetSliderControl("number", delayed, heading, usePopup, -1, formatString));
-  setting->SetMinimum(minimum);
-  setting->SetStep(step);
-  setting->SetMaximum(maximum);
+  setting->SetMinimum(static_cast<double>(minimum));
+  setting->SetStep(static_cast<double>(step));
+  setting->SetMaximum(static_cast<double>(maximum));
   setSettingDetails(setting, level, visible, help);
 
   group->AddSetting(setting);
@@ -1200,7 +1200,7 @@ std::shared_ptr<CSettingList> CGUIDialogSettingsManualBase::AddPercentageRange(
     SettingLevel level,
     int valueLower,
     int valueUpper,
-    const std::string& valueFormatString /* = "%i %%" */,
+    const std::string& valueFormatString /* = "{:d} %" */,
     int step /* = 1 */,
     int formatLabel /* = 21469 */,
     bool delayed /* = false */,
@@ -1238,7 +1238,7 @@ std::shared_ptr<CSettingList> CGUIDialogSettingsManualBase::AddRange(
     int minimum,
     int step,
     int maximum,
-    const std::string& valueFormatString /* = "%d" */,
+    const std::string& valueFormatString /* = "{:d}" */,
     int formatLabel /* = 21469 */,
     bool delayed /* = false */,
     bool visible /* = true */,
@@ -1275,7 +1275,7 @@ std::shared_ptr<CSettingList> CGUIDialogSettingsManualBase::AddRange(
     float minimum,
     float step,
     float maximum,
-    const std::string& valueFormatString /* = "%.1f" */,
+    const std::string& valueFormatString /* = "{:.1f}" */,
     int formatLabel /* = 21469 */,
     bool delayed /* = false */,
     bool visible /* = true */,
@@ -1439,9 +1439,9 @@ std::shared_ptr<CSettingList> CGUIDialogSettingsManualBase::AddRange(
   if (settingDefinition == NULL)
     return NULL;
 
-  settingDefinition->SetMinimum(minimum);
-  settingDefinition->SetStep(step);
-  settingDefinition->SetMaximum(maximum);
+  settingDefinition->SetMinimum(static_cast<double>(minimum));
+  settingDefinition->SetStep(static_cast<double>(step));
+  settingDefinition->SetMaximum(static_cast<double>(maximum));
 
   std::shared_ptr<CSettingList> setting = std::make_shared<CSettingList>(id, settingDefinition, label, GetSettingsManager());
   if (setting == NULL)

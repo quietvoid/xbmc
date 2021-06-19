@@ -48,7 +48,8 @@ std::string CNetworkInterfaceWin32::GetMacAddress() const
 {
   std::string result;
   const unsigned char* mAddr = m_adapter.PhysicalAddress;
-  result = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", mAddr[0], mAddr[1], mAddr[2], mAddr[3], mAddr[4], mAddr[5]);
+  result = StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mAddr[0], mAddr[1],
+                               mAddr[2], mAddr[3], mAddr[4], mAddr[5]);
   return result;
 }
 
@@ -67,7 +68,7 @@ std::string CNetworkInterfaceWin32::GetCurrentNetmask(void) const
   if (m_adapter.FirstUnicastAddress->Address.lpSockaddr->sa_family == AF_INET)
     return CNetworkBase::GetMaskByPrefixLength(m_adapter.FirstUnicastAddress->OnLinkPrefixLength);
 
-  return StringUtils::Format("%u", m_adapter.FirstUnicastAddress->OnLinkPrefixLength);
+  return std::to_string(m_adapter.FirstUnicastAddress->OnLinkPrefixLength);
 }
 
 std::string CNetworkInterfaceWin32::GetCurrentDefaultGateway(void) const
@@ -137,7 +138,7 @@ void CNetworkWin32::queryInterfaceList()
     }
   }
   else
-    CLog::Log(LOGDEBUG, "%s - GetAdaptersAddresses() failed ...", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "{} - GetAdaptersAddresses() failed ...", __FUNCTION__);
 }
 
 std::vector<std::string> CNetworkWin32::GetNameServers(void)
@@ -212,7 +213,9 @@ bool CNetworkWin32::PingHost(const struct sockaddr& host, unsigned int timeout_m
 
   DWORD lastErr = GetLastError();
   if (lastErr != ERROR_SUCCESS && lastErr != IP_REQ_TIMED_OUT)
-    CLog::Log(LOGERROR, "%s - %s failed - %s", __FUNCTION__, host.sa_family == AF_INET ? "IcmpSendEcho2" : "Icmp6SendEcho2", CWIN32Util::WUSysMsg(lastErr).c_str());
+    CLog::Log(LOGERROR, "{} - {} failed - {}", __FUNCTION__,
+              host.sa_family == AF_INET ? "IcmpSendEcho2" : "Icmp6SendEcho2",
+              CWIN32Util::WUSysMsg(lastErr));
 
   IcmpCloseHandle (hIcmpFile);
 
@@ -263,16 +266,20 @@ bool CNetworkInterfaceWin32::GetHostMacAddress(const struct sockaddr& host, std:
   {
     if (neighborIp.PhysicalAddressLength == 6)
     {
-      mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X",
-        neighborIp.PhysicalAddress[0], neighborIp.PhysicalAddress[1], neighborIp.PhysicalAddress[2],
-        neighborIp.PhysicalAddress[3], neighborIp.PhysicalAddress[4], neighborIp.PhysicalAddress[5]);
+      mac = StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+                                neighborIp.PhysicalAddress[0], neighborIp.PhysicalAddress[1],
+                                neighborIp.PhysicalAddress[2], neighborIp.PhysicalAddress[3],
+                                neighborIp.PhysicalAddress[4], neighborIp.PhysicalAddress[5]);
       return true;
     }
     else
-      CLog::Log(LOGERROR, "%s - ResolveIpNetEntry2 completed successfully, but mac address has length != 6 (%d)", __FUNCTION__, neighborIp.PhysicalAddressLength);
+      CLog::Log(
+          LOGERROR,
+          "{} - ResolveIpNetEntry2 completed successfully, but mac address has length != 6 ({})",
+          __FUNCTION__, neighborIp.PhysicalAddressLength);
   }
   else
-    CLog::Log(LOGERROR, "%s - ResolveIpNetEntry2 failed with error (%d)", __FUNCTION__, dwRetVal);
+    CLog::Log(LOGERROR, "{} - ResolveIpNetEntry2 failed with error ({})", __FUNCTION__, dwRetVal);
 
   return false;
 }

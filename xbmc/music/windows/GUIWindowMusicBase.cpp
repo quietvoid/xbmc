@@ -333,7 +333,7 @@ void CGUIWindowMusicBase::RefreshContent(const std::string& strContent)
 /// \brief Retrieve tag information for \e m_vecItems
 void CGUIWindowMusicBase::RetrieveMusicInfo()
 {
-  unsigned int startTick = XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   OnRetrieveMusicInfo(*m_vecItems);
 
@@ -369,8 +369,10 @@ void CGUIWindowMusicBase::RetrieveMusicInfo()
   }
   m_vecItems->Append(itemsForAdd);
 
-  CLog::Log(LOGDEBUG, "RetrieveMusicInfo() took %u msec",
-            XbmcThreads::SystemClockMillis() - startTick);
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+  CLog::Log(LOGDEBUG, "RetrieveMusicInfo() took {} ms", duration.count());
 }
 
 /// \brief Add selected list/thumb control item to playlist and start playing
@@ -394,7 +396,7 @@ void CGUIWindowMusicBase::OnQueueItem(int iItem, bool first)
 
   if (item->IsRAR() || item->IsZIP())
     return;
-  
+
   // Check for the partymode playlist item, do nothing when "PartyMode.xsp" not exist
   if (item->IsSmartPlayList())
   {
@@ -410,7 +412,8 @@ void CGUIWindowMusicBase::OnQueueItem(int iItem, bool first)
   if (!item->CanQueue())
     item->SetCanQueue(true);
 
-  CLog::Log(LOGDEBUG, "Adding file %s%s to music playlist", item->GetPath().c_str(), item->m_bIsFolder ? " (folder) " : "");
+  CLog::Log(LOGDEBUG, "Adding file {}{} to music playlist", item->GetPath(),
+            item->m_bIsFolder ? " (folder) " : "");
   CFileItemList queuedItems;
   AddItemToPlayList(item, queuedItems);
 
@@ -555,7 +558,7 @@ void CGUIWindowMusicBase::GetContextButtons(int itemNumber, CContextButtons &but
   {
     const std::shared_ptr<CProfileManager> profileManager = CServiceBroker::GetSettingsComponent()->GetProfileManager();
 
-    // Check for the partymode playlist item. 
+    // Check for the partymode playlist item.
     // When "PartyMode.xsp" not exist, only context menu button is edit
     if (item->IsSmartPlayList() &&
         (item->GetPath() == profileManager->GetUserDataItem("PartyMode.xsp")) &&
@@ -913,15 +916,16 @@ void CGUIWindowMusicBase::OnRetrieveMusicInfo(CFileItemList& items)
   bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true);
   bool bProgressVisible = false;
 
-  unsigned int tick=XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   while (m_musicInfoLoader.IsLoading())
   {
     if (bShowProgress)
     { // Do we have to init a progress dialog?
-      unsigned int elapsed=XbmcThreads::SystemClockMillis()-tick;
+      auto end = std::chrono::steady_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-      if (!bProgressVisible && elapsed>1500 && m_dlgProgress)
+      if (!bProgressVisible && duration.count() > 1500 && m_dlgProgress)
       { // tag loading takes more then 1.5 secs, show a progress dialog
         CURL url(items.GetPath());
         m_dlgProgress->SetHeading(CVariant{189});
@@ -953,8 +957,7 @@ bool CGUIWindowMusicBase::GetDirectory(const std::string &strDirectory, CFileIte
   {
     // We want to expand disc images when browsing in file view but not on library, smartplaylist
     // or node menu music windows
-    if (!items.GetPath().empty() && 
-        !StringUtils::StartsWithNoCase(items.GetPath(), "musicdb://") &&
+    if (!items.GetPath().empty() && !StringUtils::StartsWithNoCase(items.GetPath(), "musicdb://") &&
         !StringUtils::StartsWithNoCase(items.GetPath(), "special://") &&
         !StringUtils::StartsWithNoCase(items.GetPath(), "library://"))
       CDirectory::FilterFileDirectories(items, ".iso", true);
@@ -1079,9 +1082,9 @@ bool CGUIWindowMusicBase::OnSelect(int iItem)
         // ask the user if they want to play or resume
         CContextButtons choices;
         choices.Add(MUSIC_SELECT_ACTION_PLAY, 208); // 208 = Play
-        choices.Add(MUSIC_SELECT_ACTION_RESUME, StringUtils::Format(g_localizeStrings.Get(12022), // 12022 = Resume from ...
-          (*itemIt)->GetMusicInfoTag()->GetTitle().c_str()
-        ));
+        choices.Add(MUSIC_SELECT_ACTION_RESUME,
+                    StringUtils::Format(g_localizeStrings.Get(12022), // 12022 = Resume from ...
+                                        (*itemIt)->GetMusicInfoTag()->GetTitle()));
 
         auto choice = CGUIDialogContextMenu::Show(choices);
         if (choice == MUSIC_SELECT_ACTION_RESUME)

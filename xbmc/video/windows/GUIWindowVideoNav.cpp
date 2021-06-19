@@ -664,7 +664,7 @@ void CGUIWindowVideoNav::UpdateButtons()
       StringUtils::StartsWith(m_vecItems->Get(m_vecItems->Size()-1)->GetPath(), "/-1/"))
       iItems--;
   }
-  std::string items = StringUtils::Format("%i %s", iItems, g_localizeStrings.Get(127).c_str());
+  std::string items = StringUtils::Format("{} {}", iItems, g_localizeStrings.Get(127));
   SET_CONTROL_LABEL(CONTROL_LABELFILES, items);
 
   // set the filter label
@@ -829,7 +829,7 @@ void CGUIWindowVideoNav::OnDeleteItem(const CFileItemPtr& pItem)
       return;
 
     pDialog->SetHeading(CVariant{432});
-    std::string strLabel = StringUtils::Format(g_localizeStrings.Get(433).c_str(),pItem->GetLabel().c_str());
+    std::string strLabel = StringUtils::Format(g_localizeStrings.Get(433), pItem->GetLabel());
     pDialog->SetLine(1, CVariant{std::move(strLabel)});
     pDialog->SetLine(2, CVariant{""});
     pDialog->Open();
@@ -1047,7 +1047,7 @@ bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   case CONTEXT_BUTTON_GO_TO_ARTIST:
     {
       std::string strPath;
-      strPath = StringUtils::Format("musicdb://artists/%i/",
+      strPath = StringUtils::Format("musicdb://artists/{}/",
                                     item->GetProperty("artist_musicid").asInteger());
       CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_MUSIC_NAV, strPath);
       return true;
@@ -1055,7 +1055,7 @@ bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   case CONTEXT_BUTTON_GO_TO_ALBUM:
     {
       std::string strPath;
-      strPath = StringUtils::Format("musicdb://albums/%i/",
+      strPath = StringUtils::Format("musicdb://albums/{}/",
                                     item->GetProperty("album_musicid").asInteger());
       CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_MUSIC_NAV, strPath);
       return true;
@@ -1094,7 +1094,7 @@ bool CGUIWindowVideoNav::OnClick(int iItem, const std::string &player)
   CFileItemPtr item = m_vecItems->Get(iItem);
   if (!item->m_bIsFolder && item->IsVideoDb() && !item->Exists())
   {
-    CLog::Log(LOGDEBUG, "%s called on '%s' but file doesn't exist", __FUNCTION__, item->GetPath().c_str());
+    CLog::Log(LOGDEBUG, "{} called on '{}' but file doesn't exist", __FUNCTION__, item->GetPath());
 
     const std::shared_ptr<CProfileManager> profileManager = CServiceBroker::GetSettingsComponent()->GetProfileManager();
 
@@ -1141,14 +1141,14 @@ bool CGUIWindowVideoNav::OnClick(int iItem, const std::string &player)
 
     if (!videodb.GetSingleValue("tag", "tag.tag_id", videodb.PrepareSQL("tag.name = '%s' AND tag.tag_id IN (SELECT tag_link.tag_id FROM tag_link WHERE tag_link.media_type = '%s')", strTag.c_str(), mediaType.c_str())).empty())
     {
-      std::string strError = StringUtils::Format(g_localizeStrings.Get(20463).c_str(), strTag.c_str());
+      std::string strError = StringUtils::Format(g_localizeStrings.Get(20463), strTag);
       HELPERS::ShowOKDialogText(CVariant{20462}, CVariant{std::move(strError)});
       return true;
     }
 
     int idTag = videodb.AddTag(strTag);
     CFileItemList items;
-    std::string strLabel = StringUtils::Format(g_localizeStrings.Get(20464).c_str(), localizedType.c_str());
+    std::string strLabel = StringUtils::Format(g_localizeStrings.Get(20464), localizedType);
     if (CGUIDialogVideoInfo::GetItemsForTag(strLabel, mediaType, items, idTag))
     {
       for (int index = 0; index < items.Size(); index++)

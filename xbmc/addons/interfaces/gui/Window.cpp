@@ -1412,7 +1412,7 @@ int CGUIAddonWindow::GetCurrentContainerControlId()
 
 void CGUIAddonWindow::GetContextButtons(int itemNumber, CContextButtons& buttons)
 {
-  gui_context_menu_pair c_buttons[ADDON_MAX_CONTEXT_ENTRIES] = {{0}};
+  gui_context_menu_pair c_buttons[ADDON_MAX_CONTEXT_ENTRIES] = {};
   unsigned int size = ADDON_MAX_CONTEXT_ENTRIES;
   if (CBGetContextButtons)
   {
@@ -1431,7 +1431,7 @@ bool CGUIAddonWindow::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
 
 void CGUIAddonWindow::WaitForActionEvent(unsigned int timeout)
 {
-  m_actionEvent.WaitMSec(timeout);
+  m_actionEvent.Wait(std::chrono::milliseconds(timeout));
   m_actionEvent.Reset();
 }
 

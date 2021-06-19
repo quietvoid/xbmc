@@ -74,7 +74,8 @@ bool CPlayListPLS::Load(const std::string &strFile)
 
   if (file.GetLength() > 1024*1024)
   {
-    CLog::Log(LOGWARNING, "%s - File is larger than 1 MB, most likely not a playlist",__FUNCTION__);
+    CLog::Log(LOGWARNING, "{} - File is larger than 1 MB, most likely not a playlist",
+              __FUNCTION__);
     return false;
   }
 
@@ -175,7 +176,10 @@ bool CPlayListPLS::Load(const std::string &strFile)
 
   if (bFailed)
   {
-    CLog::Log(LOGERROR, "File %s is not a valid PLS playlist. Location of first file,title or length is not permitted (eg. File0 should be File1)", URIUtils::GetFileName(strFileName).c_str());
+    CLog::Log(LOGERROR,
+              "File {} is not a valid PLS playlist. Location of first file,title or length is not "
+              "permitted (eg. File0 should be File1)",
+              URIUtils::GetFileName(strFileName));
     return false;
   }
 
@@ -203,14 +207,14 @@ void CPlayListPLS::Save(const std::string& strFileName) const
   CFile file;
   if (!file.OpenForWrite(strPlaylist, true))
   {
-    CLog::Log(LOGERROR, "Could not save PLS playlist: [%s]", strPlaylist.c_str());
+    CLog::Log(LOGERROR, "Could not save PLS playlist: [{}]", strPlaylist);
     return;
   }
   std::string write;
-  write += StringUtils::Format("%s\n", START_PLAYLIST_MARKER);
+  write += StringUtils::Format("{}\n", START_PLAYLIST_MARKER);
   std::string strPlayListName=m_strPlayListName;
   g_charsetConverter.utf8ToStringCharset(strPlayListName);
-  write += StringUtils::Format("PlaylistName=%s\n", strPlayListName.c_str() );
+  write += StringUtils::Format("PlaylistName={}\n", strPlayListName);
 
   for (int i = 0; i < (int)m_vecItems.size(); ++i)
   {
@@ -219,9 +223,10 @@ void CPlayListPLS::Save(const std::string& strFileName) const
     g_charsetConverter.utf8ToStringCharset(strFileName);
     std::string strDescription=item->GetLabel();
     g_charsetConverter.utf8ToStringCharset(strDescription);
-    write += StringUtils::Format("File%i=%s\n", i + 1, strFileName.c_str() );
-    write += StringUtils::Format("Title%i=%s\n", i + 1, strDescription.c_str() );
-    write += StringUtils::Format("Length%i=%u\n", i + 1, item->GetMusicInfoTag()->GetDuration() / 1000 );
+    write += StringUtils::Format("File{}={}\n", i + 1, strFileName);
+    write += StringUtils::Format("Title{}={}\n", i + 1, strDescription.c_str());
+    write +=
+        StringUtils::Format("Length{}={}\n", i + 1, item->GetMusicInfoTag()->GetDuration() / 1000);
   }
 
   write += StringUtils::Format("NumberOfEntries={0}\n", m_vecItems.size());
@@ -263,7 +268,7 @@ bool CPlayListASX::LoadAsxIniInfo(std::istream &stream)
     while(stream.peek() != '\r' && stream.peek() != '\n' && stream.good())
       value += stream.get();
 
-    CLog::Log(LOGINFO, "Adding element %s=%s", name.c_str(), value.c_str());
+    CLog::Log(LOGINFO, "Adding element {}={}", name, value);
     CFileItemPtr newItem(new CFileItem(value));
     newItem->SetPath(value);
     if (newItem->IsVideo() && !newItem->HasVideoInfoTag()) // File is a video and needs a VideoInfoTag
@@ -289,7 +294,7 @@ bool CPlayListASX::LoadData(std::istream& stream)
 
     if (xmlDoc.Error())
     {
-      CLog::Log(LOGERROR, "Unable to parse ASX info Error: %s", xmlDoc.ErrorDesc());
+      CLog::Log(LOGERROR, "Unable to parse ASX info Error: {}", xmlDoc.ErrorDesc());
       return false;
     }
 
@@ -359,7 +364,7 @@ bool CPlayListASX::LoadData(std::istream& stream)
             if(title.empty())
               title = value;
 
-            CLog::Log(LOGINFO, "Adding element %s, %s", title.c_str(), value.c_str());
+            CLog::Log(LOGINFO, "Adding element {}, {}", title, value);
             CFileItemPtr newItem(new CFileItem(title));
             newItem->SetPath(value);
             Add(newItem);
@@ -394,7 +399,7 @@ bool CPlayListRAM::LoadData(std::istream& stream)
   while( stream.peek() != '\n' && stream.peek() != '\r' )
     strMMS += stream.get();
 
-  CLog::Log(LOGINFO, "Adding element %s", strMMS.c_str());
+  CLog::Log(LOGINFO, "Adding element {}", strMMS);
   CFileItemPtr newItem(new CFileItem(strMMS));
   newItem->SetPath(strMMS);
   Add(newItem);

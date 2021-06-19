@@ -14,7 +14,6 @@
 #include "input/joysticks/DriverPrimitive.h"
 #include "input/joysticks/interfaces/IButtonMap.h"
 #include "input/joysticks/interfaces/IInputHandler.h"
-#include "threads/SystemClock.h"
 #include "utils/log.h"
 
 #include <vector>
@@ -53,17 +52,17 @@ bool CJoystickFeature::AcceptsInput(bool bActivation)
 
 void CJoystickFeature::ResetMotion()
 {
-  m_motionStartTimeMs = 0;
+  m_motionStartTimeMs = {};
 }
 
 void CJoystickFeature::StartMotion()
 {
-  m_motionStartTimeMs = XbmcThreads::SystemClockMillis();
+  m_motionStartTimeMs = std::chrono::steady_clock::now();
 }
 
 bool CJoystickFeature::InMotion() const
 {
-  return m_motionStartTimeMs > 0;
+  return m_motionStartTimeMs.time_since_epoch().count() > 0;
 }
 
 unsigned int CJoystickFeature::MotionTimeMs() const
@@ -71,7 +70,10 @@ unsigned int CJoystickFeature::MotionTimeMs() const
   if (!InMotion())
     return 0;
 
-  return XbmcThreads::SystemClockMillis() - m_motionStartTimeMs;
+  auto now = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_motionStartTimeMs);
+
+  return duration.count();
 }
 
 // --- CScalarFeature ----------------------------------------------------------
@@ -147,11 +149,10 @@ bool CScalarFeature::OnDigitalMotion(bool bPressed)
     bHandled = m_bInitialPressHandled = m_handler->OnButtonPress(m_name, bPressed);
 
     if (m_bDigitalState)
-      CLog::Log(LOGDEBUG, "FEATURE [ %s ] on %s pressed (%s)", m_name.c_str(),
-                m_handler->ControllerID().c_str(), bHandled ? "handled" : "ignored");
+      CLog::Log(LOGDEBUG, "FEATURE [ {} ] on {} pressed ({})", m_name, m_handler->ControllerID(),
+                bHandled ? "handled" : "ignored");
     else
-      CLog::Log(LOGDEBUG, "FEATURE [ %s ] on %s released", m_name.c_str(),
-                m_handler->ControllerID().c_str());
+      CLog::Log(LOGDEBUG, "FEATURE [ {} ] on {} released", m_name, m_handler->ControllerID());
   }
   else if (m_bDigitalState)
   {
@@ -178,8 +179,8 @@ bool CScalarFeature::OnAnalogMotion(float magnitude)
   if (m_bDigitalState != bActivated)
   {
     m_bDigitalState = bActivated;
-    CLog::Log(LOGDEBUG, "FEATURE [ %s ] on %s %s", m_name.c_str(),
-              m_handler->ControllerID().c_str(), bActivated ? "activated" : "deactivated");
+    CLog::Log(LOGDEBUG, "FEATURE [ {} ] on {} {}", m_name, m_handler->ControllerID(),
+              bActivated ? "activated" : "deactivated");
   }
 
   return true;
@@ -246,11 +247,11 @@ void CAxisFeature::ProcessMotions(void)
   const bool bWasActivated = (m_state != 0.0f);
 
   if (!bActivated && bWasActivated)
-    CLog::Log(LOGDEBUG, "Feature [ %s ] on %s deactivated", m_name.c_str());
+    CLog::Log(LOGDEBUG, "Feature [ {} ] on {} deactivated", m_name);
   else if (bActivated && !bWasActivated)
   {
-    CLog::Log(LOGDEBUG, "Feature [ %s ] on %s activated %s", m_name.c_str(),
-              m_handler->ControllerID().c_str(), newState > 0.0f ? "positive" : "negative");
+    CLog::Log(LOGDEBUG, "Feature [ {} ] on {} activated {}", m_name, m_handler->ControllerID(),
+              newState > 0.0f ? "positive" : "negative");
   }
 
   if (bActivated || bWasActivated)
@@ -449,8 +450,8 @@ void CAnalogStick::ProcessMotions(void)
 
   if (bActivated ^ bWasActivated)
   {
-    CLog::Log(LOGDEBUG, "Feature [ %s ] on %s %s", m_name.c_str(),
-              m_handler->ControllerID().c_str(), bActivated ? "activated" : "deactivated");
+    CLog::Log(LOGDEBUG, "Feature [ {} ] on {} {}", m_name, m_handler->ControllerID(),
+              bActivated ? "activated" : "deactivated");
   }
 
   if (bActivated || bWasActivated)

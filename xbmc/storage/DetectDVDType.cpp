@@ -33,6 +33,7 @@
 
 using namespace XFILE;
 using namespace MEDIA_DETECT;
+using namespace std::chrono_literals;
 
 CCriticalSection CDetectDVDMedia::m_muReadingMedia;
 CEvent CDetectDVDMedia::m_evAutorun;
@@ -55,7 +56,7 @@ CDetectDVDMedia::~CDetectDVDMedia() = default;
 void CDetectDVDMedia::OnStartup()
 {
   // SetPriority( THREAD_PRIORITY_LOWEST );
-  CLog::Log(LOGDEBUG, "Compiled with libcdio Version 0.%d", LIBCDIO_VERSION_NUM);
+  CLog::Log(LOGDEBUG, "Compiled with libcdio Version 0.{}", LIBCDIO_VERSION_NUM);
 }
 
 void CDetectDVDMedia::Process()
@@ -74,17 +75,17 @@ void CDetectDVDMedia::Process()
   {
     if (g_application.GetAppPlayer().IsPlayingVideo())
     {
-      CThread::Sleep(10000);
+      CThread::Sleep(10000ms);
     }
     else
     {
       UpdateDvdrom();
       m_bStartup = false;
-      CThread::Sleep(2000);
+      CThread::Sleep(2000ms);
       if ( m_bAutorun )
       {
-        CThread::Sleep(
-            1500); // Media in drive, wait 1.5s more to be sure the device is ready for playback
+        // Media in drive, wait 1.5s more to be sure the device is ready for playback
+        CThread::Sleep(1500ms);
         m_evAutorun.Set();
         m_bAutorun = false;
       }
@@ -138,7 +139,7 @@ void CDetectDVDMedia::UpdateDvdrom()
           CGUIMessage msg(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UPDATE_SOURCES);
           CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage( msg );
           // Do we really need sleep here? This will fix: [ 1530771 ] "Open tray" problem
-          // CThread::Sleep(6000);
+          // CThread::Sleep(6000ms);
           return ;
         }
         break;
@@ -210,10 +211,9 @@ void CDetectDVDMedia::DetectMediaType()
     CLog::Log(LOGERROR, "Detection of DVD-ROM media failed.");
     return ;
   }
-  CLog::Log(LOGINFO, "Tracks overall:%i; Audio tracks:%i; Data tracks:%i",
-            m_pCdInfo->GetTrackCount(),
-            m_pCdInfo->GetAudioTrackCount(),
-            m_pCdInfo->GetDataTrackCount() );
+  CLog::Log(LOGINFO, "Tracks overall:{}; Audio tracks:{}; Data tracks:{}",
+            m_pCdInfo->GetTrackCount(), m_pCdInfo->GetAudioTrackCount(),
+            m_pCdInfo->GetDataTrackCount());
 
   // Detect ISO9660(mode1/mode2), CDDA filesystem or UDF
   if (m_pCdInfo->IsISOHFS(1) || m_pCdInfo->IsIso9660(1) || m_pCdInfo->IsIso9660Interactive(1))
@@ -245,12 +245,12 @@ void CDetectDVDMedia::DetectMediaType()
     }
   }
 
-  CLog::Log(LOGINFO, "Using protocol %s", strNewUrl.c_str());
+  CLog::Log(LOGINFO, "Using protocol {}", strNewUrl);
 
   if (m_pCdInfo->IsValidFs())
   {
     if (!m_pCdInfo->IsAudio(1))
-      CLog::Log(LOGINFO, "Disc label: %s", m_pCdInfo->GetDiscLabel().c_str());
+      CLog::Log(LOGINFO, "Disc label: {}", m_pCdInfo->GetDiscLabel());
   }
   else
   {

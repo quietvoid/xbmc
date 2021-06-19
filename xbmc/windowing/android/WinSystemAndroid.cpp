@@ -40,6 +40,7 @@
 #include <EGL/eglplatform.h>
 
 using namespace KODI;
+using namespace std::chrono_literals;
 
 CWinSystemAndroid::CWinSystemAndroid()
 {
@@ -92,7 +93,7 @@ bool CWinSystemAndroid::InitWindowSystem()
 
 bool CWinSystemAndroid::DestroyWindowSystem()
 {
-  CLog::Log(LOGINFO, "CWinSystemAndroid::%s", __FUNCTION__);
+  CLog::Log(LOGINFO, "CWinSystemAndroid::{}", __FUNCTION__);
 
   delete m_android;
   m_android = nullptr;
@@ -148,7 +149,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
 
 bool CWinSystemAndroid::DestroyWindow()
 {
-  CLog::Log(LOGINFO, "CWinSystemAndroid::%s", __FUNCTION__);
+  CLog::Log(LOGINFO, "CWinSystemAndroid::{}", __FUNCTION__);
   m_nativeWindow = nullptr;
   m_bWindowCreated = false;
   return true;
@@ -166,7 +167,7 @@ void CWinSystemAndroid::UpdateResolutions(bool bUpdateDesktopRes)
   std::vector<RESOLUTION_INFO> resolutions;
   if (!m_android->ProbeResolutions(resolutions) || resolutions.empty())
   {
-    CLog::Log(LOGWARNING, "CWinSystemAndroid::%s failed.", __FUNCTION__);
+    CLog::Log(LOGWARNING, "CWinSystemAndroid::{} failed.", __FUNCTION__);
   }
 
   const RESOLUTION_INFO resWindow = CDisplaySettings::GetInstance().GetResolutionInfo(RES_WINDOW);
@@ -220,12 +221,13 @@ void CWinSystemAndroid::OnTimeout()
 
 void CWinSystemAndroid::InitiateModeChange()
 {
-  int delay = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
-                  "videoscreen.delayrefreshchange") *
-              100;
+  auto delay =
+      std::chrono::milliseconds(CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                                    "videoscreen.delayrefreshchange") *
+                                100);
 
-  if (delay < 2000)
-    delay = 2000;
+  if (delay < 2000ms)
+    delay = 2000ms;
   m_dispResetTimer->Stop();
   m_dispResetTimer->Start(delay);
 
@@ -235,7 +237,7 @@ void CWinSystemAndroid::InitiateModeChange()
 void CWinSystemAndroid::SetHdmiState(bool connected)
 {
   CSingleLock lock(m_resourceSection);
-  CLog::Log(LOGDEBUG, "CWinSystemAndroid::SetHdmiState: state: %d", static_cast<int>(connected));
+  CLog::Log(LOGDEBUG, "CWinSystemAndroid::SetHdmiState: state: {}", static_cast<int>(connected));
 
   if (connected)
   {

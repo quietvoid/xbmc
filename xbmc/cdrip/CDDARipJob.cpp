@@ -53,8 +53,7 @@ CCDDARipJob::~CCDDARipJob() = default;
 
 bool CCDDARipJob::DoWork()
 {
-  CLog::Log(LOGINFO, "Start ripping track %s to %s", m_input.c_str(),
-                                                     m_output.c_str());
+  CLog::Log(LOGINFO, "Start ripping track {} to {}", m_input, m_output);
 
   // if we are ripping to a samba share, rip it to hd first and then copy it it the share
   CFileItem file(m_output, false);
@@ -82,9 +81,8 @@ bool CCDDARipJob::DoWork()
   CGUIDialogProgressBarHandle* handle = pDlgProgress->GetHandle(g_localizeStrings.Get(605));
 
   int iTrack = atoi(m_input.substr(13, m_input.size() - 13 - 5).c_str());
-  std::string strLine0 = StringUtils::Format("%02i. %s - %s", iTrack,
-                                            m_tag.GetArtistString().c_str(),
-                                            m_tag.GetTitle().c_str());
+  std::string strLine0 =
+      StringUtils::Format("{:02}. {} - {}", iTrack, m_tag.GetArtistString(), m_tag.GetTitle());
   handle->SetText(strLine0);
 
   // start ripping
@@ -112,8 +110,7 @@ bool CCDDARipJob::DoWork()
     // copy the ripped track to the share
     if (!CFile::Copy(m_output, file.GetPath()))
     {
-      CLog::Log(LOGERROR, "CDDARipper: Error copying file from %s to %s",
-                m_output.c_str(), file.GetPath().c_str());
+      CLog::Log(LOGERROR, "CDDARipper: Error copying file from {} to {}", m_output, file.GetPath());
       CFile::Delete(m_output);
       return false;
     }
@@ -127,12 +124,12 @@ bool CCDDARipJob::DoWork()
     CFile::Delete(m_output);
   }
   else if (result == 1)
-    CLog::Log(LOGERROR, "CDDARipper: Error ripping %s", m_input.c_str());
+    CLog::Log(LOGERROR, "CDDARipper: Error ripping {}", m_input);
   else if (result < 0)
-    CLog::Log(LOGERROR, "CDDARipper: Error encoding %s", m_input.c_str());
+    CLog::Log(LOGERROR, "CDDARipper: Error encoding {}", m_input);
   else
   {
-    CLog::Log(LOGINFO, "Finished ripping %s", m_input.c_str());
+    CLog::Log(LOGINFO, "Finished ripping {}", m_input);
     if (m_eject)
     {
       CLog::Log(LOGINFO, "Ejecting CD");
@@ -193,7 +190,8 @@ CEncoder* CCDDARipJob::SetupEncoder(CFile& reader)
     return NULL;
 
   // we have to set the tags before we init the Encoder
-  const std::string strTrack = StringUtils::Format("%li", strtol(m_input.substr(13, m_input.size() - 13 - 5).c_str(), nullptr, 10));
+  const std::string strTrack = StringUtils::Format(
+      "{}", std::stol(m_input.substr(13, m_input.size() - 13 - 5), nullptr, 10));
 
   const std::string itemSeparator = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator;
 

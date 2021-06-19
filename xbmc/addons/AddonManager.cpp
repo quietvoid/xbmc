@@ -125,7 +125,7 @@ bool CAddonMgr::Init()
     AddonPtr addon;
     if (!GetAddon(id, addon, ADDON_UNKNOWN, OnlyEnabled::YES))
     {
-      CLog::Log(LOGFATAL, "addon '%s' not installed or not enabled.", id.c_str());
+      CLog::Log(LOGFATAL, "addon '{}' not installed or not enabled.", id);
       return false;
     }
   }
@@ -235,7 +235,7 @@ std::vector<std::shared_ptr<IAddon>> CAddonMgr::GetAvailableUpdatesOrOutdatedAdd
     AddonCheckType addonCheckType) const
 {
   CSingleLock lock(m_critSection);
-  auto start = XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   std::vector<std::shared_ptr<IAddon>> result;
   std::vector<std::shared_ptr<IAddon>> installed;
@@ -247,8 +247,11 @@ std::vector<std::shared_ptr<IAddon>> CAddonMgr::GetAvailableUpdatesOrOutdatedAdd
 
   addonRepos.BuildUpdateOrOutdatedList(installed, result, addonCheckType);
 
-  CLog::Log(LOGDEBUG, "CAddonMgr::GetAvailableUpdatesOrOutdatedAddons took %i ms",
-            XbmcThreads::SystemClockMillis() - start);
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  CLog::Log(LOGDEBUG, "CAddonMgr::GetAvailableUpdatesOrOutdatedAddons took {} ms",
+            duration.count());
+
   return result;
 }
 
@@ -256,7 +259,7 @@ bool CAddonMgr::GetAddonsWithAvailableUpdate(
     std::map<std::string, CAddonWithUpdate>& addonsWithUpdate) const
 {
   CSingleLock lock(m_critSection);
-  auto start = XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   std::vector<std::shared_ptr<IAddon>> installed;
   CAddonRepos addonRepos(*this);
@@ -265,8 +268,9 @@ bool CAddonMgr::GetAddonsWithAvailableUpdate(
   GetAddonsForUpdate(installed);
   addonRepos.BuildAddonsWithUpdateList(installed, addonsWithUpdate);
 
-  CLog::Log(LOGDEBUG, "CAddonMgr::{} took {} ms", __func__,
-            XbmcThreads::SystemClockMillis() - start);
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  CLog::Log(LOGDEBUG, "CAddonMgr::{} took {} ms", __func__, duration.count());
 
   return true;
 }
@@ -275,14 +279,15 @@ bool CAddonMgr::GetCompatibleVersions(
     const std::string& addonId, std::vector<std::shared_ptr<IAddon>>& compatibleVersions) const
 {
   CSingleLock lock(m_critSection);
-  auto start = XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   CAddonRepos addonRepos(*this);
   addonRepos.LoadAddonsFromDatabase(m_database, addonId);
   addonRepos.BuildCompatibleVersionsList(compatibleVersions);
 
-  CLog::Log(LOGDEBUG, "CAddonMgr::{} took {} ms", __func__,
-            XbmcThreads::SystemClockMillis() - start);
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  CLog::Log(LOGDEBUG, "CAddonMgr::{} took {} ms", __func__, duration.count());
 
   return true;
 }
@@ -706,13 +711,14 @@ bool CAddonMgr::LoadAddon(const std::string& addonId,
 
   if (!FindAddon(addonId, origin, addonVersion))
   {
-    CLog::Log(LOGERROR, "CAddonMgr: could not reload add-on %s. FindAddon failed.", addonId.c_str());
+    CLog::Log(LOGERROR, "CAddonMgr: could not reload add-on {}. FindAddon failed.", addonId);
     return false;
   }
 
   if (!GetAddon(addonId, addon, ADDON_UNKNOWN, OnlyEnabled::NO))
   {
-    CLog::Log(LOGERROR, "CAddonMgr: could not load add-on %s. No add-on with that ID is installed.", addonId.c_str());
+    CLog::Log(LOGERROR, "CAddonMgr: could not load add-on {}. No add-on with that ID is installed.",
+              addonId);
     return false;
   }
 
@@ -728,7 +734,7 @@ bool CAddonMgr::LoadAddon(const std::string& addonId,
   }
 
   m_events.Publish(AddonEvents::ReInstalled(addon->ID()));
-  CLog::Log(LOGDEBUG, "CAddonMgr: %s successfully loaded", addon->ID().c_str());
+  CLog::Log(LOGDEBUG, "CAddonMgr: {} successfully loaded", addon->ID());
   return true;
 }
 
@@ -785,7 +791,7 @@ bool CAddonMgr::DisableAddon(const std::string& id, AddonDisabledReason disabled
     return false;
 
   //success
-  CLog::Log(LOGDEBUG, "CAddonMgr: %s disabled", id.c_str());
+  CLog::Log(LOGDEBUG, "CAddonMgr: {} disabled", id);
   AddonPtr addon;
   if (GetAddon(id, addon, ADDON_UNKNOWN, OnlyEnabled::NO) && addon != NULL)
   {
@@ -825,7 +831,7 @@ bool CAddonMgr::EnableSingle(const std::string& id)
 
   if (!IsCompatible(*addon))
   {
-    CLog::Log(LOGERROR, "Add-on '%s' is not compatible with Kodi", addon->ID().c_str());
+    CLog::Log(LOGERROR, "Add-on '{}' is not compatible with Kodi", addon->ID());
     CServiceBroker::GetEventLog().AddWithNotification(EventPtr(new CNotificationEvent(addon->Name(), 24152, EventLevel::Error)));
     UpdateDisabledReason(addon->ID(), AddonDisabledReason::INCOMPATIBLE);
     return false;
@@ -841,7 +847,7 @@ bool CAddonMgr::EnableSingle(const std::string& id)
 
   CServiceBroker::GetEventLog().Add(EventPtr(new CAddonManagementEvent(addon, 24064)));
 
-  CLog::Log(LOGDEBUG, "CAddonMgr: enabled %s", addon->ID().c_str());
+  CLog::Log(LOGDEBUG, "CAddonMgr: enabled {}", addon->ID());
   m_events.Publish(AddonEvents::Enabled(id));
   return true;
 }
@@ -854,8 +860,10 @@ bool CAddonMgr::EnableAddon(const std::string& id)
   std::vector<std::string> missing;
   ResolveDependencies(id, needed, missing);
   for (const auto& dep : missing)
-    CLog::Log(LOGWARNING, "CAddonMgr: '%s' required by '%s' is missing. Add-on may not function "
-        "correctly", dep.c_str(), id.c_str());
+    CLog::Log(LOGWARNING,
+              "CAddonMgr: '{}' required by '{}' is missing. Add-on may not function "
+              "correctly",
+              dep, id);
   for (auto it = needed.rbegin(); it != needed.rend(); ++it)
     EnableSingle(*it);
 
@@ -882,8 +890,8 @@ bool CAddonMgr::CanAddonBeDisabled(const std::string& ID)
     return false;
 
   CSingleLock lock(m_critSection);
-  // Non-optional system add-ons can not be disabled
-  if (IsSystemAddon(ID) && !IsOptionalSystemAddon(ID))
+  // Required system add-ons can not be disabled
+  if (IsRequiredSystemAddon(ID))
     return false;
 
   AddonPtr localAddon;
@@ -955,16 +963,26 @@ bool CAddonMgr::CanAddonBeInstalled(const AddonPtr& addon)
 
 bool CAddonMgr::CanUninstall(const AddonPtr& addon)
 {
-  return addon && !IsSystemAddon(addon->ID()) && CanAddonBeDisabled(addon->ID()) &&
-         !StringUtils::StartsWith(addon->Path(),
-                                  CSpecialProtocol::TranslatePath("special://xbmc/addons"));
+  return addon && CanAddonBeDisabled(addon->ID()) && !IsBundledAddon(addon->ID());
+}
+
+bool CAddonMgr::IsBundledAddon(const std::string& id)
+{
+  return XFILE::CDirectory::Exists(
+             CSpecialProtocol::TranslatePath("special://xbmc/addons/" + id + "/")) ||
+         XFILE::CDirectory::Exists(
+             CSpecialProtocol::TranslatePath("special://xbmcbin/addons/" + id + "/"));
 }
 
 bool CAddonMgr::IsSystemAddon(const std::string& id)
 {
+  return IsOptionalSystemAddon(id) || IsRequiredSystemAddon(id);
+}
+
+bool CAddonMgr::IsRequiredSystemAddon(const std::string& id)
+{
   CSingleLock lock(m_critSection);
-  return IsOptionalSystemAddon(id) ||
-         std::find(m_systemAddons.begin(), m_systemAddons.end(), id) != m_systemAddons.end();
+  return std::find(m_systemAddons.begin(), m_systemAddons.end(), id) != m_systemAddons.end();
 }
 
 bool CAddonMgr::IsOptionalSystemAddon(const std::string& id)

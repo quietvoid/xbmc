@@ -6,7 +6,6 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "threads/SystemClock.h"
 #include "FileCache.h"
 #include "threads/Thread.h"
 #include "File.h"
@@ -25,6 +24,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <inttypes.h>
 #include <memory>
 
@@ -33,49 +33,50 @@
 #endif
 
 using namespace XFILE;
+using namespace std::chrono_literals;
 
 class CWriteRate
 {
 public:
   CWriteRate()
   {
-    m_stamp = XbmcThreads::SystemClockMillis();
+    m_stamp = std::chrono::steady_clock::now();
     m_pos   = 0;
     m_size = 0;
-    m_time = 0;
+    m_time = std::chrono::milliseconds(0);
   }
 
   void Reset(int64_t pos, bool bResetAll = true)
   {
-    m_stamp = XbmcThreads::SystemClockMillis();
+    m_stamp = std::chrono::steady_clock::now();
     m_pos   = pos;
 
     if (bResetAll)
     {
       m_size  = 0;
-      m_time  = 0;
+      m_time = std::chrono::milliseconds(0);
     }
   }
 
   unsigned Rate(int64_t pos, unsigned int time_bias = 0)
   {
-    const unsigned ts = XbmcThreads::SystemClockMillis();
+    auto ts = std::chrono::steady_clock::now();
 
     m_size += (pos - m_pos);
-    m_time += (ts - m_stamp);
+    m_time += std::chrono::duration_cast<std::chrono::milliseconds>(ts - m_stamp);
     m_pos = pos;
     m_stamp = ts;
 
-    if (m_time == 0)
+    if (m_time == std::chrono::milliseconds(0))
       return 0;
 
-    return (unsigned)(1000 * (m_size / (m_time + time_bias)));
+    return (unsigned)(1000 * (m_size / (m_time.count() + time_bias)));
   }
 
 private:
-  unsigned m_stamp;
+  std::chrono::time_point<std::chrono::steady_clock> m_stamp;
   int64_t  m_pos;
-  unsigned m_time;
+  std::chrono::milliseconds m_time;
   int64_t  m_size;
 };
 
@@ -251,11 +252,12 @@ void CFileCache::Process()
     m_fileSize = m_source.GetLength();
 
     // check for seek events
-    if (m_seekEvent.WaitMSec(0))
+    if (m_seekEvent.Wait(0ms))
     {
       m_seekEvent.Reset();
-      int64_t cacheMaxPos = m_pCache->CachedDataEndPosIfSeekTo(m_seekPos);
+      const int64_t cacheMaxPos = m_pCache->CachedDataEndPosIfSeekTo(m_seekPos);
       const bool cacheReachEOF = (cacheMaxPos == m_fileSize);
+
       bool sourceSeekFailed = false;
       if (!cacheReachEOF)
       {
@@ -268,9 +270,10 @@ void CFileCache::Process()
           sourceSeekFailed = true;
         }
       }
+
       if (!sourceSeekFailed)
       {
-        const bool bCompleteReset = m_pCache->Reset(m_seekPos, false);
+        const bool bCompleteReset = m_pCache->Reset(m_seekPos);
         m_readPos = m_seekPos;
         m_writePos = m_pCache->CachedDataEndPos();
         assert(m_writePos == cacheMaxPos);
@@ -301,7 +304,7 @@ void CFileCache::Process()
       if (limiter.Rate(m_writePos) < m_writeRate * CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheReadFactor)
         break;
 
-      if (m_seekEvent.WaitMSec(100))
+      if (m_seekEvent.Wait(100ms))
       {
         if (!m_bStop)
           m_seekEvent.Set();
@@ -321,7 +324,7 @@ void CFileCache::Process()
     if (maxWrite < maxSourceRead)
     {
       // Wait until sufficient cache write space is available
-      m_pCache->m_space.WaitMSec(5);
+      m_pCache->m_space.Wait(5ms);
       continue;
     }
 
@@ -337,7 +340,7 @@ void CFileCache::Process()
                   __FUNCTION__, m_sourcePath, iRead);
 
         // Wait a bit:
-        if (m_seekEvent.WaitMSec(2000))
+        if (m_seekEvent.Wait(2000ms))
         {
           if (!m_bStop)
             m_seekEvent.Set(); // hack so that later we realize seek is needed
@@ -394,13 +397,13 @@ void CFileCache::Process()
       }
       else if (iWrite == 0)
       {
-        m_pCache->m_space.WaitMSec(5);
+        m_pCache->m_space.Wait(5ms);
       }
 
       iTotalWrite += iWrite;
 
       // check if seek was asked. otherwise if cache is full we'll freeze.
-      if (m_seekEvent.WaitMSec(0))
+      if (m_seekEvent.Wait(0ms))
       {
         if (!m_bStop)
           m_seekEvent.Set(); // make sure we get the seek event later.
@@ -420,7 +423,7 @@ void CFileCache::Process()
     * low read-rate conditions.
     */
     if (m_bFilling && m_forwardCacheSize != 0)
-    { 
+    {
       const int64_t forward = m_pCache->WaitForData(0, 0);
       if (forward + m_chunkSize >= m_forwardCacheSize)
       {
@@ -530,11 +533,11 @@ int64_t CFileCache::Seek(int64_t iFilePosition, int iWhence)
     if (m_seekPossible == 0)
       return m_nSeekResult;
 
-    /* never request closer to end than 2k, speeds up tag reading */
+    // Never request closer to end than one chunk. Speeds up tag reading
     m_seekPos = std::min(iTarget, std::max((int64_t)0, m_fileSize - m_chunkSize));
 
     m_seekEvent.Set();
-    while (!m_seekEnded.WaitMSec(100))
+    while (!m_seekEnded.Wait(100ms))
     {
       // SeekEnded will never be set if FileCache thread is not running
       if (!CThread::IsRunning())

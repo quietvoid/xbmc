@@ -30,7 +30,10 @@ void CInputProcessorKeyboard::OnKeyboardKeymap(CSeat* seat, wayland::keyboard_ke
 {
  if (format != wayland::keyboard_keymap_format::xkb_v1)
   {
-    CLog::Log(LOGWARNING, "Wayland compositor sent keymap in format %u, but we only understand xkbv1 - keyboard input will not work",  static_cast<unsigned int>(format));
+    CLog::Log(LOGWARNING,
+              "Wayland compositor sent keymap in format {}, but we only understand xkbv1 - "
+              "keyboard input will not work",
+              static_cast<unsigned int>(format));
     return;
   }
 
@@ -48,7 +51,8 @@ void CInputProcessorKeyboard::OnKeyboardKeymap(CSeat* seat, wayland::keyboard_ke
   }
   catch(std::exception const& e)
   {
-    CLog::Log(LOGERROR, "Could not parse keymap from compositor: %s - continuing without keymap", e.what());
+    CLog::Log(LOGERROR, "Could not parse keymap from compositor: {} - continuing without keymap",
+              e.what());
   }
 }
 
@@ -72,7 +76,7 @@ void CInputProcessorKeyboard::OnKeyboardKey(CSeat* seat, std::uint32_t serial, s
 {
   if (!m_keymap)
   {
-    CLog::Log(LOGWARNING, "Key event for code %u without valid keymap, ignoring", key);
+    CLog::Log(LOGWARNING, "Key event for code {} without valid keymap, ignoring", key);
     return;
   }
 
@@ -93,7 +97,7 @@ void CInputProcessorKeyboard::OnKeyboardModifiers(CSeat* seat, std::uint32_t ser
 
 void CInputProcessorKeyboard::OnKeyboardRepeatInfo(CSeat* seat, std::int32_t rate, std::int32_t delay)
 {
-  CLog::Log(LOGDEBUG, "Key repeat rate: %d cps, delay %d ms", rate, delay);
+  CLog::Log(LOGDEBUG, "Key repeat rate: {} cps, delay {} ms", rate, delay);
   // rate is in characters per second, so convert to msec interval
   m_keyRepeatInterval = (rate != 0) ? static_cast<int> (1000.0f / rate) : 0;
   m_keyRepeatDelay = delay;
@@ -127,7 +131,7 @@ void CInputProcessorKeyboard::ConvertAndSendKey(std::uint32_t scancode, bool pre
     // Update/Set key
     m_keyToRepeat = event;
     // Start timer with initial delay
-    m_keyRepeatTimer.Start(m_keyRepeatDelay, false);
+    m_keyRepeatTimer.Start(std::chrono::milliseconds(m_keyRepeatDelay), false);
   }
   else
   {
@@ -139,7 +143,8 @@ XBMC_Event CInputProcessorKeyboard::SendKey(unsigned char scancode, XBMCKey key,
 {
   assert(m_keymap);
 
-  XBMC_Event event{static_cast<unsigned char> (pressed ? XBMC_KEYDOWN : XBMC_KEYUP)};
+  XBMC_Event event{};
+  event.type = pressed ? XBMC_KEYDOWN : XBMC_KEYUP;
   event.key.keysym =
   {
     .scancode = scancode,
@@ -155,7 +160,7 @@ XBMC_Event CInputProcessorKeyboard::SendKey(unsigned char scancode, XBMCKey key,
 void CInputProcessorKeyboard::KeyRepeatTimeout()
 {
   // Reset ourselves
-  m_keyRepeatTimer.RestartAsync(m_keyRepeatInterval);
+  m_keyRepeatTimer.RestartAsync(std::chrono::milliseconds(m_keyRepeatInterval));
   // Simulate repeat: Key up and down
   XBMC_Event event = m_keyToRepeat;
   event.type = XBMC_KEYUP;

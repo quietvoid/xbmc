@@ -23,6 +23,7 @@
 
 using namespace AE;
 using namespace ActiveAE;
+using namespace std::chrono_literals;
 
 CActiveAESink::CActiveAESink(CEvent *inMsgEvent) :
   CThread("AESink"),
@@ -353,7 +354,9 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
       }
       {
         std::string portName = port == nullptr ? "timer" : port->portName;
-        CLog::Log(LOGWARNING, "CActiveAESink::%s - signal: %d form port: %s not handled for state: %d", __FUNCTION__, signal, portName.c_str(), m_state);
+        CLog::Log(LOGWARNING,
+                  "CActiveAESink::{} - signal: {} form port: {} not handled for state: {}",
+                  __FUNCTION__, signal, portName, m_state);
       }
       return;
 
@@ -375,10 +378,9 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
         {
         case CSinkDataProtocol::SAMPLE:
           CSampleBuffer *samples;
-          int timeout;
           samples = *((CSampleBuffer**)msg->data);
-          timeout = 1000*samples->pkt->nb_samples/samples->pkt->config.sample_rate;
-          CThread::Sleep(timeout);
+          CThread::Sleep(std::chrono::milliseconds(1000 * samples->pkt->nb_samples /
+                                                   samples->pkt->config.sample_rate));
           msg->Reply(CSinkDataProtocol::RETURNSAMPLE, &samples, sizeof(CSampleBuffer*));
           m_extTimeout = 0;
           return;
@@ -598,7 +600,7 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
       break;
 
     default: // we are in no state, should not happen
-      CLog::Log(LOGERROR, "CActiveAESink::%s - no valid state: %d", __FUNCTION__, m_state);
+      CLog::Log(LOGERROR, "CActiveAESink::{} - no valid state: {}", __FUNCTION__, m_state);
       return;
     }
   } // for
@@ -658,7 +660,7 @@ void CActiveAESink::Process()
     }
 
     // wait for message
-    else if (m_outMsgEvent.WaitMSec(m_extTimeout))
+    else if (m_outMsgEvent.Wait(std::chrono::milliseconds(m_extTimeout)))
     {
       m_extTimeout = timer.MillisLeft();
       continue;
@@ -705,13 +707,13 @@ void CActiveAESink::EnumerateSinkList(bool force, std::string driver)
   CAESinkFactory::EnumerateEx(m_sinkInfoList, false, driver);
   while (m_sinkInfoList.empty() && c_retry > 0)
   {
-    CLog::Log(LOGINFO, "No Devices found - retry: %d", c_retry);
-    CThread::Sleep(1500);
+    CLog::Log(LOGINFO, "No Devices found - retry: {}", c_retry);
+    CThread::Sleep(1500ms);
     c_retry--;
     // retry the enumeration
     CAESinkFactory::EnumerateEx(m_sinkInfoList, true, driver);
   }
-  CLog::Log(LOGINFO, "Found %lu Lists of Devices", m_sinkInfoList.size());
+  CLog::Log(LOGINFO, "Found {} Lists of Devices", m_sinkInfoList.size());
   PrintSinks(driver);
 }
 
@@ -722,16 +724,16 @@ void CActiveAESink::PrintSinks(std::string& driver)
     if (!driver.empty() && itt->m_sinkName != driver)
       continue;
 
-    CLog::Log(LOGINFO, "Enumerated %s devices:", itt->m_sinkName.c_str());
+    CLog::Log(LOGINFO, "Enumerated {} devices:", itt->m_sinkName);
     int count = 0;
     for (auto itt2 = itt->m_deviceInfoList.begin(); itt2 != itt->m_deviceInfoList.end(); ++itt2)
     {
-      CLog::Log(LOGINFO, "    Device %d", ++count);
+      CLog::Log(LOGINFO, "    Device {}", ++count);
       CAEDeviceInfo& info = *itt2;
       std::stringstream ss((std::string)info);
       std::string line;
       while(std::getline(ss, line, '\n'))
-        CLog::Log(LOGINFO, "        %s", line.c_str());
+        CLog::Log(LOGINFO, "        {}", line);
     }
   }
 }
@@ -828,7 +830,7 @@ void CActiveAESink::OpenSink()
 
   // WARNING: this changes format and does not use passthrough
   m_sinkFormat = m_requestedFormat;
-  CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - trying to open device %s", device.c_str());
+  CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - trying to open device {}", device);
   m_sink = CAESinkFactory::Create(device, m_sinkFormat);
 
   // try first device in out list
@@ -840,7 +842,7 @@ void CActiveAESink::OpenSink()
     if (!driver.empty())
       device = driver + ":" + device;
     m_sinkFormat = m_requestedFormat;
-    CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - trying to open device %s", device.c_str());
+    CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - trying to open device {}", device);
     m_sink = CAESinkFactory::Create(device, m_sinkFormat);
   }
 
@@ -865,14 +867,14 @@ void CActiveAESink::OpenSink()
     m_sinkFormat.m_dataFormat = AE_FMT_S32NE;
 #endif
 
-  CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - %s Initialized:", m_sink->GetName());
-  CLog::Log(LOGDEBUG, "  Output Device : %s", m_deviceFriendlyName.c_str());
-  CLog::Log(LOGDEBUG, "  Sample Rate   : %d", m_sinkFormat.m_sampleRate);
-  CLog::Log(LOGDEBUG, "  Sample Format : %s", CAEUtil::DataFormatToStr(m_sinkFormat.m_dataFormat));
-  CLog::Log(LOGDEBUG, "  Channel Count : %d", m_sinkFormat.m_channelLayout.Count());
-  CLog::Log(LOGDEBUG, "  Channel Layout: %s", ((std::string)m_sinkFormat.m_channelLayout).c_str());
-  CLog::Log(LOGDEBUG, "  Frames        : %d", m_sinkFormat.m_frames);
-  CLog::Log(LOGDEBUG, "  Frame Size    : %d", m_sinkFormat.m_frameSize);
+  CLog::Log(LOGDEBUG, "CActiveAESink::OpenSink - {} Initialized:", m_sink->GetName());
+  CLog::Log(LOGDEBUG, "  Output Device : {}", m_deviceFriendlyName);
+  CLog::Log(LOGDEBUG, "  Sample Rate   : {}", m_sinkFormat.m_sampleRate);
+  CLog::Log(LOGDEBUG, "  Sample Format : {}", CAEUtil::DataFormatToStr(m_sinkFormat.m_dataFormat));
+  CLog::Log(LOGDEBUG, "  Channel Count : {}", m_sinkFormat.m_channelLayout.Count());
+  CLog::Log(LOGDEBUG, "  Channel Layout: {}", ((std::string)m_sinkFormat.m_channelLayout));
+  CLog::Log(LOGDEBUG, "  Frames        : {}", m_sinkFormat.m_frames);
+  CLog::Log(LOGDEBUG, "  Frame Size    : {}", m_sinkFormat.m_frameSize);
 
   // init sample of silence
   SampleConfig config;
@@ -1028,7 +1030,8 @@ unsigned int CActiveAESink::OutputSamples(CSampleBuffer* samples)
     written = m_sink->AddPackets(buffer, maxFrames, totalFrames - frames);
     if (written == 0)
     {
-      CThread::Sleep(500 * m_sinkFormat.m_frames / m_sinkFormat.m_sampleRate);
+      CThread::Sleep(
+          std::chrono::milliseconds(500 * m_sinkFormat.m_frames / m_sinkFormat.m_sampleRate));
       retry++;
       if (retry > 4)
       {

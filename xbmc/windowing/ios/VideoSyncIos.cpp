@@ -17,7 +17,7 @@
 
 bool CVideoSyncIos::Setup(PUPDATECLOCK func)
 {
-  CLog::Log(LOGDEBUG, "CVideoSyncIos::%s setting up OSX", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "CVideoSyncIos::{} setting up OSX", __FUNCTION__);
 
   //init the vblank timestamp
   m_LastVBlankTime = CurrentHostCounter();
@@ -42,7 +42,7 @@ void CVideoSyncIos::Run(CEvent& stopEvent)
 
 void CVideoSyncIos::Cleanup()
 {
-  CLog::Log(LOGDEBUG, "CVideoSyncIos::%s cleaning up OSX", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "CVideoSyncIos::{} cleaning up OSX", __FUNCTION__);
   DeinitDisplayLink();
   m_winSystem.Unregister(this);
 }
@@ -50,7 +50,7 @@ void CVideoSyncIos::Cleanup()
 float CVideoSyncIos::GetFps()
 {
   m_fps = CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS();
-  CLog::Log(LOGDEBUG, "CVideoSyncIos::%s Detected refreshrate: %f hertz", __FUNCTION__, m_fps);
+  CLog::Log(LOGDEBUG, "CVideoSyncIos::{} Detected refreshrate: {:f} hertz", __FUNCTION__, m_fps);
   return m_fps;
 }
 
@@ -67,7 +67,7 @@ void CVideoSyncIos::IosVblankHandler()
 
   //calculate how many vblanks happened
   VBlankTime = (double)(nowtime - m_LastVBlankTime) / (double)CurrentHostFrequency();
-  NrVBlanks = MathUtils::round_int(VBlankTime * m_fps);
+  NrVBlanks = MathUtils::round_int(VBlankTime * static_cast<double>(m_fps));
 
   //save the timestamp of this vblank so we can calculate how many happened next time
   m_LastVBlankTime = nowtime;

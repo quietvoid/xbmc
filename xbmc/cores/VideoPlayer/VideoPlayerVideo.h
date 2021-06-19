@@ -58,7 +58,7 @@ public:
   bool AcceptsData() const override;
   bool HasData() const override;
   bool IsInited() const override;
-  void SendMessage(CDVDMsg* pMsg, int priority = 0) override;
+  void SendMessage(std::shared_ptr<CDVDMsg> pMsg, int priority = 0) override;
   void FlushMessages() override;
 
   void EnableSubtitle(bool bEnable) override { m_bRenderSubs = bEnable; }
@@ -91,12 +91,14 @@ protected:
   void Process() override;
 
   bool ProcessDecoderOutput(double &frametime, double &pts);
-  void SendMessageBack(CDVDMsg* pMsg, int priority = 0);
-  MsgQueueReturnCode GetMessage(CDVDMsg** pMsg, unsigned int iTimeoutInMilliSeconds, int &priority);
+  void SendMessageBack(const std::shared_ptr<CDVDMsg>& pMsg, int priority = 0);
+  MsgQueueReturnCode GetMessage(std::shared_ptr<CDVDMsg>& pMsg,
+                                unsigned int iTimeoutInMilliSeconds,
+                                int& priority);
 
   EOutputState OutputPicture(const VideoPicture* src);
   void ProcessOverlays(const VideoPicture* pSource, double pts);
-  void OpenStream(CDVDStreamInfo &hint, CDVDVideoCodec* codec);
+  void OpenStream(CDVDStreamInfo& hint, std::unique_ptr<CDVDVideoCodec> codec);
 
   void ResetFrameRateCalc();
   void CalcFrameRate();
@@ -131,7 +133,7 @@ protected:
   CDVDMessageQueue m_messageQueue;
   CDVDMessageQueue& m_messageParent;
   CDVDStreamInfo m_hints;
-  CDVDVideoCodec* m_pVideoCodec;
+  std::unique_ptr<CDVDVideoCodec> m_pVideoCodec;
   CPtsTracker m_ptsTracker;
   std::list<DVDMessageListItem> m_packets;
   CDroppingStats m_droppingStats;

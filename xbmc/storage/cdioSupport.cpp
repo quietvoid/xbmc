@@ -30,8 +30,7 @@ std::shared_ptr<CLibcdio> CLibcdio::m_pInstance;
 #define UDF_ANCHOR_SECTOR     256  /* buffer[5] */
 
 
-signature_t CCdIoSupport::sigs[] =
-  {
+signature_t CCdIoSupport::sigs[] = {
     /*buffer[x] off look for     description */
     {0, 1, "CD001\0", "ISO 9660\0"},
     {0, 1, "CD-I", "CD-I"},
@@ -47,8 +46,7 @@ signature_t CCdIoSupport::sigs[] =
     {4, 0, "VIDEO_CD", "VIDEO CD"},
     {4, 0, "SUPERVCD", "Chaoji VCD"},
     {0, 1, "BEA01", "UDF"},
-    { 0 }
-  };
+    {}};
 
 #undef DEBUG_CDIO
 
@@ -59,19 +57,19 @@ cdio_log_handler (cdio_log_level_t level, const char message[])
   switch (level)
   {
   case CDIO_LOG_ERROR:
-    CLog::Log(LOGDEBUG,"**ERROR: %s", message);
+    CLog::Log(LOGDEBUG, "**ERROR: {}", message);
     break;
   case CDIO_LOG_DEBUG:
-    CLog::Log(LOGDEBUG,"--DEBUG: %s", message);
+    CLog::Log(LOGDEBUG, "--DEBUG: {}", message);
     break;
   case CDIO_LOG_WARN:
-    CLog::Log(LOGDEBUG,"++ WARN: %s", message);
+    CLog::Log(LOGDEBUG, "++ WARN: {}", message);
     break;
   case CDIO_LOG_INFO:
-    CLog::Log(LOGDEBUG,"   INFO: %s", message);
+    CLog::Log(LOGDEBUG, "   INFO: {}", message);
     break;
   case CDIO_LOG_ASSERT:
-    CLog::Log(LOGDEBUG,"!ASSERT: %s", message);
+    CLog::Log(LOGDEBUG, "!ASSERT: {}", message);
     break;
   default:
     //cdio_assert_not_reached ();
@@ -332,7 +330,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
     CLog::Log(LOGINFO, "CD-ROM with ISO 9660 filesystem");
     if (fs & JOLIET)
     {
-      CLog::Log(LOGINFO, " with joliet extension level %d", m_nJolietLevel);
+      CLog::Log(LOGINFO, " with joliet extension level {}", m_nJolietLevel);
     }
     if (fs & ROCKRIDGE)
     {
@@ -346,7 +344,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
     CLog::Log(LOGINFO, "CD-ROM with High Sierra filesystem");
     break;
   case FS_INTERACTIVE:
-    CLog::Log(LOGINFO, "CD-Interactive%s", num_audio > 0 ? "/Ready" : "");
+    CLog::Log(LOGINFO, "CD-Interactive{}", num_audio > 0 ? "/Ready" : "");
     break;
   case FS_HFS:
     CLog::Log(LOGINFO, "CD-ROM with Macintosh HFS");
@@ -377,8 +375,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
   case FS_ISO_9660_INTERACTIVE:
   case FS_ISO_HFS:
   case FS_ISO_UDF:
-    CLog::Log(LOGINFO, "ISO 9660: %i blocks, label %s",
-              m_nIsofsSize, m_strDiscLabel.c_str());
+    CLog::Log(LOGINFO, "ISO 9660: {} blocks, label {}", m_nIsofsSize, m_strDiscLabel);
     break;
   }
 
@@ -386,7 +383,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
   {
   case FS_UDF:
   case FS_ISO_UDF:
-    CLog::Log(LOGINFO, "UDF: version %x.%2.2x", m_nUDFVerMajor, m_nUDFVerMinor);
+    CLog::Log(LOGINFO, "UDF: version {:x}.{:02x}", m_nUDFVerMajor, m_nUDFVerMinor);
     break;
   }
 
@@ -400,7 +397,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
   }
   if (fs & MULTISESSION)
   {
-    CLog::Log(LOGINFO, "Multisession, offset = %i   ", m_nMsOffset);
+    CLog::Log(LOGINFO, "Multisession, offset = {}   ", m_nMsOffset);
   }
   if (fs & HIDDEN_TRACK)
   {
@@ -408,7 +405,7 @@ void CCdIoSupport::PrintAnalysis(int fs, int num_audio)
   }
   if (fs & PHOTO_CD)
   {
-    CLog::Log(LOGINFO, "%sPhoto CD   ", num_audio > 0 ? " Portfolio " : "");
+    CLog::Log(LOGINFO, "{}Photo CD   ", num_audio > 0 ? " Portfolio " : "");
   }
   if (fs & CDTV)
   {
@@ -655,7 +652,7 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
   cdio = ::cdio_open(source_name, DRIVER_UNKNOWN);
   if (cdio == NULL)
   {
-    CLog::Log(LOGERROR, "%s: Error in automatically selecting driver with input", __FUNCTION__);
+    CLog::Log(LOGERROR, "{}: Error in automatically selecting driver with input", __FUNCTION__);
     return NULL;
   }
 
@@ -703,7 +700,7 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
       ti.nMins = 0;
       ti.nSecs = 0;
       info->SetTrackInformation( i, ti );
-      CLog::Log(LOGDEBUG, "cdio_track_msf for track %i failed, I give up.", i);
+      CLog::Log(LOGDEBUG, "cdio_track_msf for track {} failed, I give up.", i);
       delete info;
       ::cdio_destroy(cdio);
       return NULL;
@@ -785,7 +782,8 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
       else
       {
         m_nFs &= ~FS_MASK; /* del filesystem info */
-        CLog::Log(LOGDEBUG, "Oops: %i unused sectors at start, but hidden track check failed.", m_nStartTrack);
+        CLog::Log(LOGDEBUG, "Oops: {} unused sectors at start, but hidden track check failed.",
+                  m_nStartTrack);
       }
     }
     PrintAnalysis(m_nFs, m_nNumAudio);
@@ -851,12 +849,12 @@ CCdInfo* CCdIoSupport::GetCdInfo(char* cDeviceFileName)
         /* Track is beyond last session -> new session found */
         m_nMsOffset = m_nStartTrack;
 
-        CLog::Log(LOGINFO, "Session #%d starts at track %2i, LSN: %6i,"
-                  " ISO 9660 blocks: %6i",
+        CLog::Log(LOGINFO,
+                  "Session #{} starts at track {:2}, LSN: {:6},"
+                  " ISO 9660 blocks: {:6}",
                   j++, i, m_nStartTrack, m_nIsofsSize);
 
-        CLog::Log(LOGINFO, "ISO 9660: %i blocks, label %s",
-                  m_nIsofsSize, m_strDiscLabel.c_str());
+        CLog::Log(LOGINFO, "ISO 9660: {} blocks, label {}", m_nIsofsSize, m_strDiscLabel);
         m_nFs |= MULTISESSION;
         ti.nfsInfo = m_nFs;
       }

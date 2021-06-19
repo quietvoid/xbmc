@@ -31,7 +31,6 @@
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "threads/SystemClock.h"
 #include "utils/SortUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
@@ -199,15 +198,16 @@ void CGUIWindowPictures::OnPrepareFileItems(CFileItemList& items)
   bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true);
   bool bProgressVisible = false;
 
-  unsigned int tick=XbmcThreads::SystemClockMillis();
+  auto start = std::chrono::steady_clock::now();
 
   while (loader.IsLoading() && m_dlgProgress && !m_dlgProgress->IsCanceled())
   {
     if (bShowProgress)
     { // Do we have to init a progress dialog?
-      unsigned int elapsed=XbmcThreads::SystemClockMillis()-tick;
+      auto end = std::chrono::steady_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-      if (!bProgressVisible && elapsed>1500 && m_dlgProgress)
+      if (!bProgressVisible && duration.count() > 1500 && m_dlgProgress)
       { // tag loading takes more then 1.5 secs, show a progress dialog
         CURL url(items.GetPath());
 
@@ -528,7 +528,9 @@ void CGUIWindowPictures::OnItemLoaded(CFileItem *pItem)
 
 void CGUIWindowPictures::LoadPlayList(const std::string& strPlayList)
 {
-  CLog::Log(LOGDEBUG,"CGUIWindowPictures::LoadPlayList()... converting playlist into slideshow: %s", strPlayList.c_str());
+  CLog::Log(LOGDEBUG,
+            "CGUIWindowPictures::LoadPlayList()... converting playlist into slideshow: {}",
+            strPlayList);
   std::unique_ptr<CPlayList> pPlayList (CPlayListFactory::Create(strPlayList));
   if (nullptr != pPlayList)
   {
@@ -554,7 +556,7 @@ void CGUIWindowPictures::LoadPlayList(const std::string& strPlayList)
     for (int i = 0; i < playlist.size(); ++i)
     {
       CFileItemPtr pItem = playlist[i];
-      //CLog::Log(LOGDEBUG,"-- playlist item: %s", pItem->GetPath().c_str());
+      //CLog::Log(LOGDEBUG,"-- playlist item: {}", pItem->GetPath());
       if (pItem->IsPicture() && !(pItem->IsZIP() || pItem->IsRAR() || pItem->IsCBZ() || pItem->IsCBR()))
         pSlideShow->Add(pItem.get());
     }

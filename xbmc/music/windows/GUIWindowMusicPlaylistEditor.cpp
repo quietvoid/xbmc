@@ -77,7 +77,7 @@ bool CGUIWindowMusicPlaylistEditor::OnAction(const CAction &action)
 bool CGUIWindowMusicPlaylistEditor::OnClick(int iItem, const std::string& player /* = "" */)
 {
   if (iItem < 0 || iItem >= m_vecItems->Size()) return false;
-  CFileItemPtr item = m_vecItems->Get(iItem);  
+  CFileItemPtr item = m_vecItems->Get(iItem);
 
   // Expand .m3u files in sources list when clicked on regardless of <playlistasfolders>
   if (item->IsFileFolder(EFILEFOLDER_MASK_ONBROWSE))
@@ -219,7 +219,8 @@ void CGUIWindowMusicPlaylistEditor::UpdateButtons()
   CGUIWindowMusicBase::UpdateButtons();
 
   // Update object count label
-  std::string items = StringUtils::Format("%i %s", m_vecItems->GetObjectCount(), g_localizeStrings.Get(127).c_str()); // " 14 Objects"
+  std::string items = StringUtils::Format("{} {}", m_vecItems->GetObjectCount(),
+                                          g_localizeStrings.Get(127)); // " 14 Objects"
   SET_CONTROL_LABEL(CONTROL_LABELFILES, items);
 }
 
@@ -297,7 +298,8 @@ void CGUIWindowMusicPlaylistEditor::UpdatePlaylist()
   OnMessage(msg);
 
   // indicate how many songs we have
-  std::string items = StringUtils::Format("%i %s", m_playlist->Size(), g_localizeStrings.Get(134).c_str()); // "123 Songs"
+  std::string items = StringUtils::Format("{} {}", m_playlist->Size(),
+                                          g_localizeStrings.Get(134)); // "123 Songs"
   SET_CONTROL_LABEL(CONTROL_LABEL_PLAYLIST, items);
 
   m_playlistThumbLoader.Load(*m_playlist);

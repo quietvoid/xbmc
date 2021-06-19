@@ -8,7 +8,8 @@ set(CORE_MAIN_SOURCE ${CMAKE_SOURCE_DIR}/xbmc/platform/posix/main.cpp
 
 set(ARCH_DEFINES -DTARGET_POSIX -DTARGET_DARWIN -DTARGET_DARWIN_OSX)
 set(SYSTEM_DEFINES -D_REENTRANT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-                   -D__STDC_CONSTANT_MACROS)
+                   -D__STDC_CONSTANT_MACROS
+                   -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED)
 set(PLATFORM_DIR platform/darwin)
 set(PLATFORMDEFS_DIR platform/posix)
 set(CMAKE_SYSTEM_NAME Darwin)
@@ -35,7 +36,8 @@ list(APPEND DEPLIBS "-framework DiskArbitration" "-framework IOKit"
                     "-framework ApplicationServices" "-framework AppKit"
                     "-framework CoreAudio" "-framework AudioToolbox"
                     "-framework CoreGraphics" "-framework CoreMedia"
-                    "-framework VideoToolbox" "-framework Security")
+                    "-framework VideoToolbox" "-framework Security"
+                    "-framework GameController")
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13)
 set(CMAKE_XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME OFF)

@@ -170,7 +170,7 @@ namespace XBMCAddon
 
       CApplicationMessenger::GetInstance().SendMsg(TMSG_PLAYLISTPLAYER_PLAY, selected);
       //CServiceBroker::GetPlaylistPlayer().Play(selected);
-      //CLog::Log(LOGINFO, "Current Song After Play: %i", CServiceBroker::GetPlaylistPlayer().GetCurrentSong());
+      //CLog::Log(LOGINFO, "Current Song After Play: {}", CServiceBroker::GetPlaylistPlayer().GetCurrentSong());
     }
 
     void Player::OnPlayBackStarted(const CFileItem &file)
@@ -368,9 +368,9 @@ namespace XBMCAddon
 
       const CVideoInfoTag* movie = CServiceBroker::GetGUI()->GetInfoManager().GetCurrentMovieTag();
       if (movie)
-        return new InfoTagVideo(*movie);
+        return new InfoTagVideo(movie);
 
-      return new InfoTagVideo();
+      return new InfoTagVideo(true);
     }
 
     InfoTagMusic* Player::getMusicInfoTag()
@@ -381,9 +381,9 @@ namespace XBMCAddon
 
       const MUSIC_INFO::CMusicInfoTag* tag = CServiceBroker::GetGUI()->GetInfoManager().GetCurrentSongTag();
       if (tag)
-        return new InfoTagMusic(*tag);
+        return new InfoTagMusic(tag);
 
-      return new InfoTagMusic();
+      return new InfoTagMusic(true);
     }
 
     void Player::updateInfoTag(const XBMCAddon::xbmcgui::ListItem* item)

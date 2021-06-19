@@ -20,7 +20,6 @@
 CDVDOverlayCodecText::CDVDOverlayCodecText() : CDVDOverlayCodec("Text Subtitle Decoder")
 {
   m_pOverlay = NULL;
-  m_bIsSSA = false;
 }
 
 CDVDOverlayCodecText::~CDVDOverlayCodecText()
@@ -31,11 +30,9 @@ CDVDOverlayCodecText::~CDVDOverlayCodecText()
 
 bool CDVDOverlayCodecText::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
-  m_bIsSSA = (hints.codec == AV_CODEC_ID_SSA);
-  if(hints.codec == AV_CODEC_ID_TEXT || hints.codec == AV_CODEC_ID_SSA)
+  if (hints.codec == AV_CODEC_ID_TEXT || hints.codec == AV_CODEC_ID_SUBRIP)
     return true;
-  if(hints.codec == AV_CODEC_ID_SUBRIP)
-    return true;
+
   return false;
 }
 
@@ -64,20 +61,6 @@ int CDVDOverlayCodecText::Decode(DemuxPacket *pPacket)
   end   = (char*)data + size;
   p     = (char*)data;
 
-  if (m_bIsSSA)
-  {
-    // currently just skip the prefixed ssa fields (8 fields)
-    int nFieldCount = 8;
-    while (nFieldCount > 0 && start < end)
-    {
-      if (*start == ',')
-        nFieldCount--;
-
-      start++;
-      p++;
-    }
-  }
-
   CDVDSubtitleTagSami TagConv;
   bool Taginit = TagConv.Init();
 
@@ -100,7 +83,7 @@ int CDVDOverlayCodecText::Decode(DemuxPacket *pPacket)
       char* override = (char*)malloc(p-start + 1);
       memcpy(override, start, p-start);
       override[p-start] = '\0';
-      CLog::Log(LOGINFO, "%s - Skipped formatting tag %s", __FUNCTION__, override);
+      CLog::Log(LOGINFO, "{} - Skipped formatting tag {}", __FUNCTION__, override);
       free(override);
 
       start = p+1;

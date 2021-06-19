@@ -50,7 +50,6 @@
 #include "settings/SettingsComponent.h"
 #include "storage/MediaManager.h"
 #include "threads/IRunnable.h"
-#include "threads/SystemClock.h"
 #include "utils/FileUtils.h"
 #include "utils/LabelFormatter.h"
 #include "utils/log.h"
@@ -76,6 +75,7 @@
 
 using namespace ADDON;
 using namespace KODI::MESSAGING;
+using namespace std::chrono_literals;
 
 namespace
 {
@@ -216,7 +216,7 @@ bool CGUIMediaWindow::OnAction(const CAction &action)
 
   if (action.GetID() >= ACTION_FILTER_SMS2 && action.GetID() <= ACTION_FILTER_SMS9)
   {
-    std::string filter = StringUtils::Format("%i", action.GetID() - ACTION_FILTER_SMS2 + 2);
+    std::string filter = std::to_string(action.GetID() - ACTION_FILTER_SMS2 + 2);
     CGUIMessage message(GUI_MSG_NOTIFY_ALL, GetID(), 0, GUI_MSG_FILTER_ITEMS, 1); // 1 for append
     message.SetStringParam(filter);
     OnMessage(message);
@@ -617,12 +617,13 @@ void CGUIMediaWindow::UpdateButtons()
     else
       CONTROL_ENABLE(CONTROL_BTNSORTBY);
 
-    std::string sortLabel = StringUtils::Format(g_localizeStrings.Get(550).c_str(),
-                                                g_localizeStrings.Get(m_guiState->GetSortMethodLabel()).c_str());
+    std::string sortLabel = StringUtils::Format(
+        g_localizeStrings.Get(550), g_localizeStrings.Get(m_guiState->GetSortMethodLabel()));
     SET_CONTROL_LABEL(CONTROL_BTNSORTBY, sortLabel);
   }
 
-  std::string items = StringUtils::Format("%i %s", m_vecItems->GetObjectCount(), g_localizeStrings.Get(127).c_str());
+  std::string items =
+      StringUtils::Format("{} {}", m_vecItems->GetObjectCount(), g_localizeStrings.Get(127));
   SET_CONTROL_LABEL(CONTROL_LABELFILES, items);
 
   SET_CONTROL_LABEL2(CONTROL_BTN_FILTER, GetProperty("filter").asString());
@@ -732,9 +733,8 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
 
   std::string strParentPath = m_history.GetParentPath();
 
-  CLog::Log(LOGDEBUG,"CGUIMediaWindow::GetDirectory (%s)",
-            CURL::GetRedacted(strDirectory).c_str());
-  CLog::Log(LOGDEBUG,"  ParentPath = [%s]", CURL::GetRedacted(strParentPath).c_str());
+  CLog::Log(LOGDEBUG, "CGUIMediaWindow::GetDirectory ({})", CURL::GetRedacted(strDirectory));
+  CLog::Log(LOGDEBUG, "  ParentPath = [{}]", CURL::GetRedacted(strParentPath));
 
   if (pathToUrl.IsProtocol("plugin") && !pathToUrl.GetHostName().empty())
     CServiceBroker::GetAddonMgr().UpdateLastUsed(pathToUrl.GetHostName());
@@ -747,7 +747,7 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
   }
   else
   {
-    unsigned int time = XbmcThreads::SystemClockMillis();
+    auto start = std::chrono::steady_clock::now();
 
     if (strDirectory.empty())
       SetupShares();
@@ -760,7 +760,10 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
     items.Assign(dirItems);
 
     // took over a second, and not normally cached, so cache it
-    if ((XbmcThreads::SystemClockMillis() - time) > 1000  && items.CacheToDiscIfSlow())
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    if (duration.count() > 1000 && items.CacheToDiscIfSlow())
       items.Save(GetID());
 
     // if these items should replace the current listing, then pop it off the top
@@ -839,7 +842,7 @@ bool CGUIMediaWindow::Update(const std::string &strDirectory, bool updateFilterP
 
   if (!GetDirectory(pathNoFilter, *m_vecItems))
   {
-    CLog::Log(LOGERROR,"CGUIMediaWindow::GetDirectory(%s) failed", CURL(path).GetRedacted().c_str());
+    CLog::Log(LOGERROR, "CGUIMediaWindow::GetDirectory({}) failed", CURL(path).GetRedacted());
 
     if (URIUtils::PathEquals(path, GetRootPath()))
       return false; // Nothing to fallback to
@@ -1131,7 +1134,7 @@ bool CGUIMediaWindow::OnClick(int iItem, const std::string &player)
   else if (pItem->IsAndroidApp())
   {
     std::string appName = URIUtils::GetFileName(pItem->GetPath());
-    CLog::Log(LOGDEBUG, "CGUIMediaWindow::OnClick Trying to run: %s",appName.c_str());
+    CLog::Log(LOGDEBUG, "CGUIMediaWindow::OnClick Trying to run: {}", appName);
     return CXBMCApp::StartActivity(appName);
   }
 #endif
@@ -1384,9 +1387,7 @@ void CGUIMediaWindow::GetDirectoryHistoryString(const CFileItem* pItem, std::str
   {
     // Could be a cue item, all items of a cue share the same filename
     // so add the offsets to build the history string
-    strHistoryString = StringUtils::Format("%" PRIi64 "%" PRIi64,
-                                           pItem->m_lStartOffset,
-                                           pItem->m_lEndOffset);
+    strHistoryString = StringUtils::Format("{}{}", pItem->m_lStartOffset, pItem->m_lEndOffset);
     strHistoryString += pItem->GetPath();
   }
   else
@@ -1490,7 +1491,7 @@ bool CGUIMediaWindow::OnPlayMedia(int iItem, const std::string &player)
   CServiceBroker::GetPlaylistPlayer().SetCurrentPlaylist(PLAYLIST_NONE);
   CFileItemPtr pItem=m_vecItems->Get(iItem);
 
-  CLog::Log(LOGDEBUG, "%s %s", __FUNCTION__, CURL::GetRedacted(pItem->GetPath()).c_str());
+  CLog::Log(LOGDEBUG, "{} {}", __FUNCTION__, CURL::GetRedacted(pItem->GetPath()));
 
   bool bResult = false;
   if (pItem->IsInternetStream() || pItem->IsPlayList())
@@ -1752,9 +1753,11 @@ bool CGUIMediaWindow::OnPopupMenu(int itemIdx)
   //Add items from plugin
   {
     int i = 0;
-    while (item->HasProperty(StringUtils::Format("contextmenulabel(%i)", i)))
+    while (item->HasProperty(StringUtils::Format("contextmenulabel({})", i)))
     {
-      buttons.emplace_back(~buttons.size(), item->GetProperty(StringUtils::Format("contextmenulabel(%i)", i)).asString());
+      buttons.emplace_back(
+          ~buttons.size(),
+          item->GetProperty(StringUtils::Format("contextmenulabel({})", i)).asString());
       ++i;
     }
   }
@@ -1788,8 +1791,10 @@ bool CGUIMediaWindow::OnPopupMenu(int itemIdx)
   {
     bool saveVal = m_backgroundLoad;
     m_backgroundLoad = false;
-    CApplicationMessenger::GetInstance().SendMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
-        item->GetProperty(StringUtils::Format("contextmenuaction(%i)", idx - pluginMenuRange.first)).asString());
+    CApplicationMessenger::GetInstance().SendMsg(
+        TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
+        item->GetProperty(StringUtils::Format("contextmenuaction({})", idx - pluginMenuRange.first))
+            .asString());
     m_backgroundLoad = saveVal;
     return true;
   }
@@ -1904,7 +1909,8 @@ void CGUIMediaWindow::UpdateFilterPath(const std::string &strDirectory, const CF
   {
     if (!m_filter.LoadFromJson(filter))
     {
-      CLog::Log(LOGWARNING, "CGUIMediaWindow::UpdateFilterPath(): unable to load existing filter (%s)", filter.c_str());
+      CLog::Log(LOGWARNING,
+                "CGUIMediaWindow::UpdateFilterPath(): unable to load existing filter ({})", filter);
       m_filter.Reset();
       m_strFilterPath = m_vecItems->GetPath();
     }
@@ -2118,7 +2124,8 @@ bool CGUIMediaWindow::GetAdvanceFilteredItems(CFileItemList &items)
   }
 
   if (resultItems.Size() > 0)
-    CLog::Log(LOGWARNING, "CGUIMediaWindow::GetAdvanceFilteredItems(): %d unknown items", resultItems.Size());
+    CLog::Log(LOGWARNING, "CGUIMediaWindow::GetAdvanceFilteredItems(): {} unknown items",
+              resultItems.Size());
 
   items.ClearItems();
   items.Append(filteredItems);
@@ -2269,7 +2276,7 @@ bool CGUIMediaWindow::WaitGetDirectoryItems(CGetDirectoryItems &items)
       m_updateEvent.Set();
     }, nullptr, CJob::PRIORITY_NORMAL);
 
-    while (!m_updateEvent.WaitMSec(1))
+    while (!m_updateEvent.Wait(1ms))
     {
       if (!ProcessRenderLoop(false))
         break;
@@ -2289,7 +2296,7 @@ void CGUIMediaWindow::CancelUpdateItems()
   {
     m_rootDir.CancelDirectory();
     m_updateAborted = true;
-    if (!m_updateEvent.WaitMSec(5000))
+    if (!m_updateEvent.Wait(5000ms))
     {
       CLog::Log(LOGERROR, "CGUIMediaWindow::CancelUpdateItems - error cancel update");
     }

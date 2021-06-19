@@ -27,7 +27,6 @@
 #include "playlists/PlayList.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
-#include "threads/SystemClock.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
@@ -48,7 +47,7 @@ CPlayListPlayer::CPlayListPlayer(void)
   for (REPEAT_STATE& repeatState : m_repeatState)
     repeatState = REPEAT_NONE;
   m_iFailedSongs = 0;
-  m_failedSongsStart = 0;
+  m_failedSongsStart = std::chrono::steady_clock::now();
 }
 
 CPlayListPlayer::~CPlayListPlayer(void)
@@ -158,7 +157,8 @@ int CPlayListPlayer::GetNextSong()
     // otherwise immediately abort playback
     if (m_iCurrentSong >= 0 && m_iCurrentSong < playlist.size() && playlist[m_iCurrentSong]->GetProperty("unplayable").asBoolean())
     {
-      CLog::Log(LOGERROR,"Playlist Player: RepeatOne stuck on unplayable item: %i, path [%s]", m_iCurrentSong, playlist[m_iCurrentSong]->GetPath().c_str());
+      CLog::Log(LOGERROR, "Playlist Player: RepeatOne stuck on unplayable item: {}, path [{}]",
+                m_iCurrentSong, playlist[m_iCurrentSong]->GetPath());
       CGUIMessage msg(GUI_MSG_PLAYLISTPLAYER_STOPPED, 0, 0, m_iCurrentPlayList, m_iCurrentSong);
       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
       Reset();
@@ -310,11 +310,12 @@ bool CPlayListPlayer::Play(int iSong,
 
   m_bPlaybackStarted = false;
 
-  unsigned int playAttempt = XbmcThreads::SystemClockMillis();
+  const auto playAttempt = std::chrono::steady_clock::now();
   bool ret = g_application.PlayFile(*item, player, bAutoPlay);
   if (!ret)
   {
-    CLog::Log(LOGERROR,"Playlist Player: skipping unplayable item: %i, path [%s]", m_iCurrentSong, CURL::GetRedacted(item->GetDynPath()).c_str());
+    CLog::Log(LOGERROR, "Playlist Player: skipping unplayable item: {}, path [{}]", m_iCurrentSong,
+              CURL::GetRedacted(item->GetDynPath()));
     playlist.SetUnPlayable(m_iCurrentSong);
 
     // abort on 100 failed CONSECTUTIVE songs
@@ -322,9 +323,15 @@ bool CPlayListPlayer::Play(int iSong,
       m_failedSongsStart = playAttempt;
     m_iFailedSongs++;
     const std::shared_ptr<CAdvancedSettings> advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
-    if ((m_iFailedSongs >= advancedSettings->m_playlistRetries && advancedSettings->m_playlistRetries >= 0)
-        || ((XbmcThreads::SystemClockMillis() - m_failedSongsStart  >= static_cast<unsigned int>(advancedSettings->m_playlistTimeout) * 1000) &&
-            advancedSettings->m_playlistTimeout))
+
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_failedSongsStart);
+
+    if ((m_iFailedSongs >= advancedSettings->m_playlistRetries &&
+         advancedSettings->m_playlistRetries >= 0) ||
+        ((duration.count() >=
+          static_cast<unsigned int>(advancedSettings->m_playlistTimeout) * 1000) &&
+         advancedSettings->m_playlistTimeout))
     {
       CLog::Log(LOGDEBUG,"Playlist Player: one or more items failed to play... aborting playback");
 
@@ -337,7 +344,7 @@ bool CPlayListPlayer::Play(int iSong,
       GetPlaylist(m_iCurrentPlayList).Clear();
       m_iCurrentPlayList = PLAYLIST_NONE;
       m_iFailedSongs = 0;
-      m_failedSongsStart = 0;
+      m_failedSongsStart = std::chrono::steady_clock::now();
       return false;
     }
 
@@ -368,7 +375,7 @@ bool CPlayListPlayer::Play(int iSong,
 
   // consecutive error counter so reset if the current item is playing
   m_iFailedSongs = 0;
-  m_failedSongsStart = 0;
+  m_failedSongsStart = std::chrono::steady_clock::now();
   m_bPlayedFirstFile = true;
   return true;
 }
@@ -514,7 +521,9 @@ void CPlayListPlayer::SetShuffle(int iPlaylist, bool bYesNo, bool bNotify /* = f
 
     if (bNotify)
     {
-      std::string shuffleStr = StringUtils::Format("%s: %s", g_localizeStrings.Get(191).c_str(), g_localizeStrings.Get(bYesNo ? 593 : 591).c_str()); // Shuffle: All/Off
+      std::string shuffleStr =
+          StringUtils::Format("{}: {}", g_localizeStrings.Get(191),
+                              g_localizeStrings.Get(bYesNo ? 593 : 591)); // Shuffle: All/Off
       CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info, g_localizeStrings.Get(559),  shuffleStr);
     }
 
@@ -529,7 +538,7 @@ void CPlayListPlayer::SetShuffle(int iPlaylist, bool bYesNo, bool bNotify /* = f
     }
   }
 
-  // its likely that the playlist changed   
+  // its likely that the playlist changed
   if (CServiceBroker::GetGUI() != nullptr)
   {
     CGUIMessage msg(GUI_MSG_PLAYLIST_CHANGED, 0, 0);
@@ -589,7 +598,7 @@ void CPlayListPlayer::SetRepeat(int iPlaylist, REPEAT_STATE state, bool bNotify 
     break;
   }
 
-  // its likely that the playlist changed   
+  // its likely that the playlist changed
   if (CServiceBroker::GetGUI() != nullptr)
   {
     CGUIMessage msg(GUI_MSG_PLAYLIST_CHANGED, 0, 0);
@@ -904,11 +913,10 @@ void PLAYLIST::CPlayListPlayer::OnApplicationMessage(KODI::MESSAGING::ThreadMess
         {
           CFileItemPtr item = (*list)[0];
           // if the item is a plugin we need to resolve the URL to ensure the infotags are filled.
-          // resolve only for a maximum of 5 times to avoid deadlocks (plugin:// paths can resolve to plugin:// paths)
-          for (int i = 0; URIUtils::IsPlugin(item->GetDynPath()) && i < 5; ++i)
+          if (URIUtils::HasPluginPath(*item) &&
+              !XFILE::CPluginDirectory::GetResolvedPluginResult(*item))
           {
-            if (!XFILE::CPluginDirectory::GetPluginResult(item->GetDynPath(), *item, true))
-              return;
+            return;
           }
           if (item->IsAudio() || item->IsVideo())
             Play(item, pMsg->strParam);

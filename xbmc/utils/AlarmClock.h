@@ -39,7 +39,7 @@ public:
     // note: strName should be lower case only here
     //       No point checking it at the moment due to it only being called
     //       from GUIInfoManager (which is always lowercase)
-    //    CLog::Log(LOGDEBUG,"checking for %s",strName.c_str());
+    //    CLog::Log(LOGDEBUG,"checking for {}",strName);
     return (m_event.find(strName) != m_event.end());
   }
 
@@ -48,10 +48,12 @@ public:
     std::map<std::string,SAlarmClockEvent>::iterator iter;
     if ((iter=m_event.find(strName)) != m_event.end())
     {
-      return iter->second.m_fSecs-(iter->second.watch.IsRunning() ? iter->second.watch.GetElapsedSeconds() : 0.f);
+      return iter->second.m_fSecs - static_cast<double>(iter->second.watch.IsRunning()
+                                                            ? iter->second.watch.GetElapsedSeconds()
+                                                            : 0.f);
     }
 
-    return 0.f;
+    return 0.0;
   }
 
   void Stop(const std::string& strName, bool bSilent = false);

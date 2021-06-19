@@ -707,7 +707,7 @@ void CVideoInfoTag::Serialize(CVariant& value) const
   value["plotoutline"] = m_strPlotOutline;
   value["plot"] = m_strPlot;
   value["title"] = m_strTitle;
-  value["votes"] = StringUtils::Format("%i", GetRating().votes);
+  value["votes"] = std::to_string(GetRating().votes);
   value["studio"] = m_studio;
   value["trailer"] = m_strTrailer;
   value["cast"] = CVariant(CVariant::VariantTypeArray);
@@ -818,7 +818,7 @@ void CVideoInfoTag::ToSortable(SortItem& sortable, Field field) const
   {
     // seasons with a custom name/title need special handling as they should be sorted by season number
     if (m_type == MediaTypeSeason && !m_strSortTitle.empty())
-      sortable[FieldSortTitle] = StringUtils::Format(g_localizeStrings.Get(20358).c_str(), m_iSeason);
+      sortable[FieldSortTitle] = StringUtils::Format(g_localizeStrings.Get(20358), m_iSeason);
     else
       sortable[FieldSortTitle] = m_strSortTitle;
     break;
@@ -946,9 +946,10 @@ const std::string CVideoInfoTag::GetCast(bool bIncludeRole /*= false*/) const
   {
     std::string character;
     if (it->strRole.empty() || !bIncludeRole)
-      character = StringUtils::Format("%s\n", it->strName.c_str());
+      character = StringUtils::Format("{}\n", it->strName);
     else
-      character = StringUtils::Format("%s %s %s\n", it->strName.c_str(), g_localizeStrings.Get(20347).c_str(), it->strRole.c_str());
+      character =
+          StringUtils::Format("{} {} {}\n", it->strName, g_localizeStrings.Get(20347), it->strRole);
     strLabel += character;
   }
   return StringUtils::TrimRight(strLabel, "\n");
@@ -1413,7 +1414,8 @@ unsigned int CVideoInfoTag::GetDurationFromMinuteString(const std::string &runti
   if (!duration)
   { // failed for some reason, or zero
     duration = strtoul(runtime.c_str(), NULL, 10);
-    CLog::Log(LOGWARNING, "%s <runtime> should be in minutes. Interpreting '%s' as %u minutes", __FUNCTION__, runtime.c_str(), duration);
+    CLog::Log(LOGWARNING, "{} <runtime> should be in minutes. Interpreting '{}' as {} minutes",
+              __FUNCTION__, runtime, duration);
   }
   return duration*60;
 }
@@ -1528,9 +1530,12 @@ void CVideoInfoTag::RemoveRating(const std::string& type)
   }
 }
 
-void CVideoInfoTag::SetRatings(RatingMap ratings)
+void CVideoInfoTag::SetRatings(RatingMap ratings, const std::string& defaultRating /* = "" */)
 {
   m_ratings = std::move(ratings);
+
+  if (!defaultRating.empty() && m_ratings.find(defaultRating) != m_ratings.end())
+    m_strDefaultRating = defaultRating;
 }
 
 void CVideoInfoTag::SetVotes(int votes, const std::string& type /* = "" */)
@@ -1628,7 +1633,8 @@ void CVideoInfoTag::SetEpisodeGuide(std::string episodeGuide)
   if (StringUtils::StartsWith(episodeGuide, "<episodeguide"))
     m_strEpisodeGuide = Trim(std::move(episodeGuide));
   else
-    m_strEpisodeGuide = StringUtils::Format("<episodeguide>%s</episodeguide>", Trim(std::move(episodeGuide)).c_str());
+    m_strEpisodeGuide =
+        StringUtils::Format("<episodeguide>{}</episodeguide>", Trim(std::move(episodeGuide)));
 }
 
 void CVideoInfoTag::SetStatus(std::string status)

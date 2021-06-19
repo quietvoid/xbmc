@@ -11,6 +11,7 @@
 #include "settings/lib/ISettingsHandler.h"
 #include "threads/CriticalSection.h"
 
+#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,7 +37,7 @@ public:
 
   void OnSettingsLoaded() override;
 
-  IPlayer* CreatePlayer(const std::string& nameId, IPlayerCallback& callback) const;
+  std::shared_ptr<IPlayer> CreatePlayer(const std::string& nameId, IPlayerCallback& callback) const;
   void GetPlayers(const CFileItem& item, std::vector<std::string>&players) const;   //Players supporting the specified file
   void GetPlayers(std::vector<std::string>&players, bool audio, bool video) const;  //All audio players and/or video players
   void GetPlayers(std::vector<std::string>&players) const;                          //All players
@@ -62,7 +63,7 @@ private:
 
   bool LoadConfiguration(const std::string &file, bool clear);
 
-  std::vector<CPlayerCoreConfig *> m_vecPlayerConfigs;
-  std::vector<CPlayerSelectionRule *> m_vecCoreSelectionRules;
+  std::vector<std::unique_ptr<CPlayerCoreConfig>> m_vecPlayerConfigs;
+  std::list<std::unique_ptr<CPlayerSelectionRule>> m_vecCoreSelectionRules;
   mutable CCriticalSection m_section;
 };

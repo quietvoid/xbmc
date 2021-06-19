@@ -58,8 +58,8 @@ CInputStreamAddon::CInputStreamAddon(const AddonInfoPtr& addonInfo,
     StringUtils::Trim(key);
     key = name + "." + key;
   }
-  m_struct = { 0 };
-  m_caps = { 0 };
+  m_struct = {};
+  m_caps = {};
 }
 
 CInputStreamAddon::~CInputStreamAddon()
@@ -74,8 +74,9 @@ bool CInputStreamAddon::Supports(const AddonInfoPtr& addonInfo, const CFileItem&
   if (!oldAddonProp.isNull())
   {
     CLog::Log(LOGERROR,
-              "CInputStreamAddon::%s - 'inputstreamaddon' has been deprecated, "
-              "please use `#KODIPROP:inputstream=%s` instead", __func__, oldAddonProp.asString());
+              "CInputStreamAddon::{} - 'inputstreamaddon' has been deprecated, "
+              "please use `#KODIPROP:inputstream={}` instead",
+              __func__, oldAddonProp.asString());
   }
 
   // check if a specific inputstream addon is requested
@@ -140,7 +141,7 @@ bool CInputStreamAddon::Open()
   if (CreateInstance(&m_struct) != ADDON_STATUS_OK || !m_struct.toAddon->open)
     return false;
 
-  INPUTSTREAM_PROPERTY props = {0};
+  INPUTSTREAM_PROPERTY props = {};
   std::map<std::string, std::string> propsMap;
   for (auto &key : m_fileItemProps)
   {
@@ -159,11 +160,9 @@ bool CInputStreamAddon::Open()
     if (props.m_nCountInfoValues >= STREAM_MAX_PROPERTY_COUNT)
     {
       CLog::Log(LOGERROR,
-                "CInputStreamAddon::%s - Hit max count of stream properties, "
-                "have %d, actual count: %d",
-                __func__,
-                STREAM_MAX_PROPERTY_COUNT,
-                propsMap.size());
+                "CInputStreamAddon::{} - Hit max count of stream properties, "
+                "have {}, actual count: {}",
+                __func__, STREAM_MAX_PROPERTY_COUNT, propsMap.size());
       break;
     }
   }
@@ -185,7 +184,7 @@ bool CInputStreamAddon::Open()
   bool ret = m_struct.toAddon->open(&m_struct, &props);
   if (ret)
   {
-    m_caps = { 0 };
+    m_caps = {};
     m_struct.toAddon->get_capabilities(&m_struct, &m_caps);
 
     m_subAddonProvider = std::shared_ptr<CInputStreamProvider>(
@@ -204,7 +203,7 @@ void CInputStreamAddon::Close()
   delete m_struct.toAddon;
   delete m_struct.toKodi;
   delete m_struct.props;
-  m_struct = { 0 };
+  m_struct = {};
 }
 
 bool CInputStreamAddon::IsEOF()
@@ -352,7 +351,7 @@ std::vector<CDemuxStream*> CInputStreamAddon::GetStreams() const
 {
   std::vector<CDemuxStream*> streams;
 
-  INPUTSTREAM_IDS streamIDs = {0};
+  INPUTSTREAM_IDS streamIDs = {};
   bool ret = m_struct.toAddon->get_stream_ids(&m_struct, &streamIDs);
   if (!ret || streamIDs.m_streamCount > INPUTSTREAM_MAX_STREAM_COUNT)
     return streams;
@@ -417,7 +416,7 @@ KODI_HANDLE CInputStreamAddon::cb_get_stream_transfer(KODI_HANDLE handle,
     videoStream->iFpsRate = stream->m_FpsRate;
     videoStream->iWidth = stream->m_Width;
     videoStream->iHeight = stream->m_Height;
-    videoStream->fAspect = stream->m_Aspect;
+    videoStream->fAspect = static_cast<double>(stream->m_Aspect);
     videoStream->iBitRate = stream->m_BitRate;
     videoStream->profile = ConvertVideoCodecProfile(stream->m_codecProfile);
 

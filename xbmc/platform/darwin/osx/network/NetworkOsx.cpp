@@ -90,8 +90,8 @@ bool CNetworkInterfaceOsx::GetHostMacAddress(unsigned long host_ip, std::string&
 
           u_char* cp = (u_char*)LLADDR(sdl);
 
-          mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", cp[0], cp[1], cp[2], cp[3],
-                                    cp[4], cp[5]);
+          mac = StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", cp[0], cp[1],
+                                    cp[2], cp[3], cp[4], cp[5]);
           ret = true;
           break;
         }
@@ -230,7 +230,7 @@ bool CNetworkOsx::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
   // else some error
 
   if (result < 0 || result > 1)
-    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
+    CLog::Log(LOGERROR, "Ping fail : status = {}, errno = {} : '{}'", status, errno, cmd_line);
 
   return result == 0;
 }
