@@ -183,6 +183,7 @@ public:
 
   void SetRefreshRate(float rate);
   void SetDisplayMode(int mode, float rate);
+  void SetVideoLayoutBackgroundColor(const int color);
   int GetDPI() const;
 
   CRect MapRenderToDroid(const CRect& srcRect);
@@ -247,6 +248,7 @@ private:
   static void SetRefreshRateCallback(void* rateVariant);
   static void SetDisplayModeCallback(void* modeVariant);
   static void KeepScreenOnCallback(void* onVariant);
+  static void SetViewBackgroundColorCallback(void* mapVariant);
 
   static void RegisterDisplayListenerCallback(void*);
   void UnregisterDisplayListener();
