@@ -21,6 +21,8 @@ uint32_t CBitstreamReader::ReadBits(int nbits)
   buffer += offbits / 8;
   offbits %= 8;
 
+  pos_bits += nbits;
+
   return ret;
 }
 
@@ -29,6 +31,8 @@ void CBitstreamReader::SkipBits(int nbits)
   offbits += nbits;
   buffer += offbits / 8;
   offbits %= 8;
+
+  pos_bits += nbits;
 
   if (buffer > (start + length))
     oflow = 1;

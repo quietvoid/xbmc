@@ -17,10 +17,13 @@ public:
   uint32_t   ReadBits(int nbits);
   void       SkipBits(int nbits);
   uint32_t   GetBits(int nbits);
+  unsigned int Position() { return pos_bits; }
+  unsigned int AvailableBits() { return length * 8 - pos_bits; }
 
 private:
   const uint8_t *buffer, *start;
   int offbits = 0, length, oflow = 0;
+  int pos_bits = 0;
 };
 
 const uint8_t* find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
