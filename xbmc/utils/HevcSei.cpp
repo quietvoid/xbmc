@@ -121,3 +121,66 @@ const std::vector<CHevcSei> CHevcSei::ParseSeiRbspUnclearedEmulation(const uint8
   hevc_clear_start_code_emulation_prevention_3_byte(in_data, in_data_len, buf);
   return ParseSeiRbsp(buf.data(), buf.size());
 }
+
+const std::optional<const CHevcSei*> CHevcSei::FindHdr10PlusSeiMessage(
+    const std::vector<uint8_t>& buf, const std::vector<CHevcSei>& messages)
+{
+  for (const CHevcSei& sei : messages)
+  {
+    if (sei.payload_type == 4 && sei.payload_size >= 7)
+    {
+      CBitstreamReader br(buf.data() + sei.payload_offset, sei.payload_size);
+      auto itu_t_t35_country_code = br.ReadBits(8);
+      auto itu_t_t35_terminal_provider_code = br.ReadBits(16);
+      auto itu_t_t35_terminal_provider_oriented_code = br.ReadBits(16);
+
+      if (itu_t_t35_country_code == 0xB5 && itu_t_t35_terminal_provider_code == 0x003C &&
+          itu_t_t35_terminal_provider_oriented_code == 0x0001)
+      {
+        auto application_identifier = br.ReadBits(8);
+        auto application_version = br.ReadBits(8);
+
+        if (application_identifier == 4 && application_version <= 1)
+          return &sei;
+      }
+    }
+  }
+
+  return {};
+}
+
+const std::pair<bool, const std::vector<uint8_t>> CHevcSei::RemoveHdr10PlusFromSeiNalu(
+    const uint8_t* in_data, const size_t in_data_len)
+{
+  bool containsHdr10Plus = false;
+
+  std::vector<uint8_t> buf;
+  std::vector<CHevcSei> messages =
+      CHevcSei::ParseSeiRbspUnclearedEmulation(in_data, in_data_len, buf);
+
+  if (auto res = CHevcSei::FindHdr10PlusSeiMessage(buf, messages))
+  {
+    auto msg = *res;
+
+    containsHdr10Plus = true;
+    if (messages.size() > 1)
+    {
+      // Multiple SEI messages in NALU, remove only the HDR10+ one
+      buf.erase(std::next(buf.begin(), msg->msg_offset),
+                std::next(buf.begin(), msg->payload_offset + msg->payload_size));
+      hevc_add_start_code_emulation_prevention_3_byte(buf);
+    }
+    else
+    {
+      // Single SEI message in NALU
+      buf.clear();
+    }
+  }
+  else
+  {
+    // No HDR10+
+    buf.clear();
+  }
+
+  return std::make_pair(containsHdr10Plus, buf);
+}
